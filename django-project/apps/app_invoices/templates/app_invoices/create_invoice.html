@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+{% load static %}
+{% load humanize %}
+{% load widget_tweaks %}
+
+{% block main-content %}
+<div class="w3-container w3-animate-left" style="margin-top: 80px;">
+
+    {% if invoice_instance %}
+        <h3 class="w3-text-blue w3-center lao-noto w3-padding-small">ແກ້ໄຂໃບເກັບເງິນ</h3>
+    {% else %}
+        <h3 class="w3-text-blue w3-center lao-noto w3-padding-small">ອອກໃບເກັບເງິນໃໝ່</h3>
+    {% endif %}
+    {% if confirm_update %}
+        <!-- ======================== Notification this invoice already existing ======================== -->
+        <div class="w3-red w3-border w3-round-large w3-padding">
+            <h4 class="w3-text-white w3-center lao-noto">
+                <i class="fa fa-warning w3-center w3-margin-bottom w3-animate-heartead" style="font-size: 2rem;"></i> <br>
+                ແຈ້ງເຕືອນ
+            </h4>
+            <p class="w3-center">ມີໃບເກັບເງິນ Quotation <b class="w3-text-black">{{ quotation.quotation_id }}</b> ນີ້ແລ້ວ</p>
+            <p class="w3-center">ທ່ານຕ້ອງການ <b class="w3-text-black">ອັບເດດ</b> ຂໍ້ມູນແທນຫຼືບໍ?</p>
+        </div>
+        <!-- Hiddien form for update -->
+        <form method="post" enctype="multipart/form-data" 
+            class="w3-container w3-light-grey w3-padding-large w3-card-4 w3-round-large w3-margin-top">
+            {% csrf_token %}
+            <div class="w3-row-padding">
+                {% for field in form.visible_fields %}
+                    <div class="w3-col l3 m6 s12 w3-padding-small">
+                        <label class="w3-text-dark w3-medium">{{field.label}}</label>
+                        <div class="w3-margin-bottom">
+                            {{ field|add_class:"w3-input w3-border w3-round" }}
+                            {% if field.errors %}
+                                <div class="w3-text-red w3-small">
+                                    {{field.errors}}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+            <input type="hidden" name="confirm_update" value="1">
+            <div class="w3-center w3-margin-top">
+                <button type="submit" class="w3-button w3-orange w3-round-large w3-padding-large">
+                    ຢືນຢັນອັບເດດ
+                </button>
+                <a href="{% url 'app_quotations:quotation_details' quotation.quotation_id %}" 
+                   class="w3-button w3-gray w3-round-large w3-padding-large">
+                    ຍົກເລີກ
+                </a>
+            </div>
+        </form>
+    {% else %}
+        <form method="post" enctype="multipart/form-data" class="w3-container w3-light-grey w3-padding-large w3-card-4 w3-round-large">
+            {% csrf_token %}
+
+            <!-- ======================== Invoice Main Form ======================== -->
+            <div class="w3-card-2 w3-white w3-round-large w3-padding w3-margin-bottom">
+                <h3 class="w3-text-blue lao-noto w3-margin-bottom">ຂໍ້ມູນໃບເກັບເງິນ</h3>
+                <div class="w3-row-padding">
+                    {% for field in form.visible_fields %}
+                        <div class="w3-col l3 m6 s12 w3-padding-small">
+                            <label class="w3-text-dark w3-medium">{{ field.label }}</label>
+                            <div class="w3-margin-bottom">
+                                {{ field|add_class:"w3-input w3-border w3-round" }}
+                                {% if field.errors %}
+                                    <div class="w3-text-red w3-small">{{ field.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+            <!-- ======================== Customer & Quotation Info ======================== -->
+            <div class="w3-cell-row">
+                <div class="w3-third w3-padding">
+                    <div class="w3-card-2 w3-white w3-round-large w3-padding w3-light-blue">
+                        <h3 class="lao-noto">ຂໍ້ມູນລູກຄ້າ</h3><hr>
+                        <p>ບໍລິສັດ: <b class="w3-text-blue"> {{ quotation.customer.company_name }}</b></p>
+                        <p>ຜູ້ຕິດຕໍ່: <b class="w3-text-blue"> {{ quotation.customer.contact_person_name }}</b></p>
+                        <p>ເບີໂທ: <b class="w3-text-blue"> {{ quotation.customer.phone_number }}</b></p>
+                        <p>ອີເມວ: <b class="w3-text-blue"> {{ quotation.customer.email }}</b></p>
+                        <p>ທີ່ຢູ່: <b class="w3-text-blue"> {{quotation.customer.company_address}} </b></p>
+                    </div>
+                </div>
+                <div class="w3-third w3-padding">
+                    <div class="w3-card-2 w3-white w3-round-large w3-padding w3-light-green">
+                        <h3 class="lao-noto">ຂໍ້ມູນໃບສະເຫນີລາຄາ</h3><hr>
+                        <p>ໃບສະເຫນີລາຄາເລກທີ: <b class="w3-text-blue"> {{ quotation.quotation_id }}</b></p>
+                        <p>ອອກວັນທີ: <b class="w3-text-blue"> {{ quotation.start_date|date:"d/m/Y" }}</b></p>
+                        <p>ຫມົດອາຍຸວັນທີ: <b class="w3-text-blue"> {{ quotation.end_date | date:"d/m/Y" }}</b></p>
+                        <p>ພະນັກງານຮັບຜິດຊອບ: <b class="w3-text-blue"> {{ quotation.created_by.user.employee }}</b></p> <br>
+                    </div>
+                </div>
+                <div class="w3-third w3-padding">
+                    <div class="w3-card-2 w3-white w3-round-large w3-padding w3-light-green">
+                        <h3 class="lao-noto">ຄ່າໃຊ້ຈ່າຍເພີ່ມເຕີມ</h3><hr>
+                        <p>ລວມລາຄາສິນຄ້າທັງຫມົດ <b class="w3-text-blue">{{ quotation.total_all_products | intcomma }} USD</b></p>
+                        {% if additional_expense %}
+                            <p>IT Service: {{ additional_expense.it_service_percent }} % <b class="w3-text-blue">= {{additional_expense.it_service_output |intcomma}} USD</b></p>
+                            <p>VAT: {{ additional_expense.vat_percent }} % <b class="w3-text-blue">= {{additional_expense.vat_output |intcomma}} USD</b></p>
+                            <p>ລວມທັງໝົດ: <b class="w3-text-blue">{{ additional_expense.grand_total |intcomma }} USD</b></p>
+                            <p>Exchange Rate: {{ additional_expense.exchange_rate|intcomma }} <b class="w3-text-blue">= LAK {{additional_expense.exchange_rate_output |intcomma}} ກີບ</b></p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- ======================== Product List ======================== -->
+            <div class="w3-card-4 w3-white w3-round-large w3-padding w3-margin-top">
+                <h4 class="w3-text-blue lao-noto">ລາຍການສິນຄ້າ</h4>
+                <div class="w3-responsive">
+                    <table class="w3-table w3-striped w3-bordered w3-small w3-hoverable">
+                        <thead>
+                            <tr class="w3-blue">
+                                <th>ລຳດັບ</th>
+                                <th>ສິນຄ້າ</th>
+                                <th>ລາຄາ</th>
+                                <th>ຈຳນວນ</th>
+                                <th>ໄລຍະເວລາ</th>
+                                <th>ລວມ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in quotation.items.all %}
+                            <tr>
+                                <td>{{ forloop.counter }}</td>
+                                <td>{{ item.product_name }}</td>
+                                <td>{{ item.price|floatformat:2|intcomma }} USD</td>
+                                <td>{{ item.qty }}</td>
+                                <td>{{ item.period }}</td>
+                                <td>{{ item.total_one_product|floatformat:2|intcomma }} USD</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="w3-center">ບໍ່ມີລາຍການສິນຄ້າ</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ======================== Submit Button ======================== -->
+            <div class="w3-center w3-margin-top">
+                <button type="submit" class="w3-button w3-green w3-round-large w3-padding-large w3-hover-dark-green">ບັນທຶກ</button>
+            </div>
+        </form>
+    {% endif %}
+</div>
+{% endblock %}

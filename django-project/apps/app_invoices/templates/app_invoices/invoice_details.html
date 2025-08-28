@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% load static %}
+{% load widget_tweaks %}
+{% load humanize %}
+
+{% block main-content %}
+<div class="w3-container w3-animate-opacity w3-animate-left" style="margin-top: 70px;">
+    
+    <!-- Header -->
+    <div class="w3-margin-bottom w3-padding-small">
+        <h2 class="lao-noto w3-text-blue-light">{{ title }} {{ quotation.quotation_id }}</h2>
+        <div class="w3-right w3-animate-right">
+            {% if invoice.get_status_display == 'ຈ່າຍແລ້ວ'  %}
+                <a href="#" class="w3-button w3-animate-right w3-teal w3-hover-shadow w3-round-xlarge w3-hover-deep-orange">ອອກໃບສັ່ງຊື້</a>
+            {% endif %}
+            <a href="{% url 'app_invoices:update_invoice' invoice.invoice_id %}" class="w3-button w3-animate-right w3-green w3-hover-shadow w3-round-xlarge w3-hover-deep-orange" style="width: 100px;">ແກ້ໄຂ</a>
+            <a href="{% url 'app_invoices:invoice_view_form' invoice.invoice_id %}" class="w3-button w3-animate-right w3-blue w3-hover-shadow w3-round-xlarge w3-hover-deep-orange">ເບິງໃບສະເຫນີລາຄາ ແລະ ດາວໂຫລດ</a>
+            <a href="{% url 'app_invoices:home' %}" class="w3-button w3-animate-right w3-red w3-hover-shadow w3-round-xlarge w3-hover-deep-orange">ອອກຈາກຫນ້ານີ້</a>
+        </div>
+        <p class="w3-text-gray">
+            <span class="w3-text-blue">ວັນທີ: {{ invoice.issue_date|date:"d/m/Y" }} </span> |
+            <span class="w3-text-red">ໝົດອາຍຸ: {{ invoice.due_date|date:"d/m/Y" }} </span> |
+            <span>ພະນັກງານຮັບຜິດຊອບໃບເກັບເງິນ: {{ invoice.created_by }}</span> |
+        </p>
+        <span class="w3-tag w3-blue-light w3-round">{{ invoice.get_status_display }}</span>
+    </div>
+
+    <!-- Grid layout -->
+    <div class="w3-row-padding">
+        <!-- Left Column -->
+        <div class="w3-col l6 m12 w3-margin-bottom">
+            <!-- Customer Info -->
+            <div class="w3-card-4 w3-white w3-round-large w3-padding">
+                <h4 class="w3-text-black lao-noto">ຂໍ້ມູນລູກຄ້າ</h4>
+                <p class="w3-text-blue"><b class="w3-text-black">ບໍລິສັດ:</b> {{ invoice.quotation.customer.company_name }}</p>
+                <p class="w3-text-blue"><b class="w3-text-black">ຜູ້ຕິດຕໍ່:</b> {{ invoice.quotation.customer.contact_person_name }}</p>
+                <p class="w3-text-blue"><b class="w3-text-black">ເບີໂທ:</b> {{ invoice.quotation.customer.phone_number }}</p>
+                <p class="w3-text-blue"><b class="w3-text-black">ອີເມວ:</b> {{ invoice.quotation.customer.email }}</p>
+                <p class="w3-text-blue"><b class="w3-text-black">ທີ່ຢູ່:</b> {{ invoice.quotation.customer.company_address }}</p>
+            </div>
+
+            <!-- Additional Expenses -->
+            {% if additional_expense %}
+            <div class="w3-card-4 w3-white w3-round-large w3-padding w3-margin-top">
+                <h4 class="w3-text-black lao-noto">ຄ່າໃຊ້ຈ່າຍເພີ່ມເຕີມ</h4>
+                <p class="w3-text-blue"><b class="w3-text-black">IT Service:</b> {{ additional_expense.it_service_percent }} %</p>
+                <p class="w3-text-blue"><b class="w3-text-black">VAT:</b> {{ additional_expense.vat_percent }} %</p>
+                <p class="w3-text-blue"><b class="w3-text-black">ອັດຕາແລກປ່ຽນ:</b> {{ additional_expense.exchange_rate|intcomma }} ກີບ</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Right Column -->
+        <div class="w3-col l6 m12">
+            <!-- Price Summary -->
+            <div class="w3-card-4 w3-pale-green w3-round-large w3-padding w3-margin-bottom">
+                <h4 class="w3-text-green lao-noto">ເອກະສານຢືນຢັນ</h4>
+                {% if invoice.invoice_signatured %}
+                    <p>
+                        <b>ໃບເກັບເງິນທີ່ໄດ້ຮອງຮັບແລ້ວ: </b>
+                        <a href="{{ invoice.invoice_signatured.url }}" target="_blank" class="w3-button w3-small w3-blue w3-round">
+                            ເບິງ / ດາວໂຫລດ
+                        </a>
+                    </p>
+                {% else %}
+                    <p class="w3-text-red"><b>ໃບເກັບເງິນ:</b> ຍັງບໍ່ໄດ້ອັບໂຫລດ</p>
+                {% endif %}
+
+                {% if invoice.customer_payment %}
+                    <p>
+                        <b>ຫລັກຖານຢືນຢັນການຊຳລະ:</b>
+                        <a href="{{ invoice.customer_payment.url }}" target="_blank" class="w3-button w3-small w3-blue w3-round">
+                            ເບິງ / ດາວໂຫລດ
+                        </a>
+                    </p>
+                {% else %}
+                    <p class="w3-text-red"><b>ຫລັກຖານຢືນຢັນການຊຳລະ:</b> ຍັງບໍ່ໄດ້ອັບໂຫລດ</p>
+                {% endif %}
+                <hr>
+
+                <h4 class="w3-text-green lao-noto">ສະຫຼຸບລາຄາ</h4>
+                <p class="w3-text-blue"><b class="w3-text-black">ລວມລາຄາ:</b> {{ total_price|floatformat:2|intcomma }} USD</p>
+                {% if it_service_amount %}
+                    <p class="w3-text-blue"><b class="w3-text-black">+ IT Service:</b> {{ it_service_amount|floatformat:2|intcomma }} USD</p>
+                {% endif %}
+                {% if vat_amount %}
+                    <p class="w3-text-blue"><b class="w3-text-black">+ VAT:</b> {{ vat_amount|floatformat:2|intcomma }} USD</p>
+                {% endif %}
+                <hr>
+                <p class="lao-noto w3-text-black" style="font-size: 1rem;"><b>ລວມທັງໝົດ:</b>
+                    <span class="w3-text-blue">{{ grand_total|floatformat:2|intcomma }} USD</span>
+                </p>
+                {% if additional_expense and additional_expense.exchange_rate_output %}
+                    <p class="lao-noto w3-text-black" style="font-size: 1rem;"><b>ໄລ່ເປັນກີບ:</b>
+                        <span class="w3-text-blue">{{ additional_expense.exchange_rate_output|intcomma }} ກີບ</span>
+                    </p>
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+    <!-- Invoice Items Table -->
+    <div class="w3-container">
+        <div class="w3-card-4 w3-white w3-round-large w3-padding w3-margin-top">
+            <h4 class="w3-text-blue lao-noto">ລາຍການສິນຄ້າ</h4>
+            <div class="w3-responsive">
+                <table class="w3-table w3-striped w3-border w3-small">
+                    <thead>
+                        <tr class="w3-blue-dark-light">
+                            <th>ລຳດັບ</th>
+                            <th>ສິນຄ້າ</th>
+                            <th>ລາຄາ</th>
+                            <th>ຈຳນວນ</th>
+                            <th>ໄລຍະເວລາ</th>
+                            <th>ລວມ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in items %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td>{{ item.product_name }}</td>
+                            <td>{{ item.price|floatformat:2|intcomma }} USD</td>
+                            <td>{{ item.qty }}</td>
+                            <td>{{ item.period }}</td>
+                            <td>{{ item.total_one_product|floatformat:2|intcomma }} USD</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="w3-center">ບໍ່ມີລາຍການສິນຄ້າ</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

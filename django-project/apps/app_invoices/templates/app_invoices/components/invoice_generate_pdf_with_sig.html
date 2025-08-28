@@ -1,0 +1,154 @@
+{% load static %}
+{% load humanize %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Download File</title>
+    <link rel="stylesheet" href="{% static 'app_invoices/css/pdf_generator.css' %}">
+</head>
+<body>
+    <div class="page">
+        <header>
+            <div class="header-row">
+                <div class="header-cell">
+                    <img src="{% static 'app_invoices/images/topvalue.png' %}" alt="logo-header" class="header-logo">
+                </div>
+                <div class="header-cell header-right">
+                    <img src="{% static 'app_invoices/images/microsoft.png' %}" alt="logo-header" class="header-logo">
+                </div>
+            </div>
+        </header>
+        <div class="contact-info">
+                <p>
+                    Nongbouathong Road, Phonsavattai Village, Sikhottabong District, Vientiane Capital, Lao PDR, 
+                    <strong>Tel:</strong> +856 21 254377,<br> <strong>Fax:</strong> +856 21 254300, 
+                    <strong>Email:</strong> <a href="mailto:sales@topvalueservice.com">sales@topvalueservice.com</a>,
+                    <strong>Website:</strong> <a href="http://www.topvalueservice.com">www.topvalueservice.com</a>
+                </p>
+            </div>
+
+        <div class="content-section">
+            <h1 class="main-heading"><strong><u>INVOICE</u></strong></h1>
+            <div class="info-row">
+                <div class="info-cell">
+                    <p style="color: #00205F;"><b>To: {{ generate_invoice_form.quotation.customer.company_name|upper }} </b></p>
+                    <p><b>Location: </b>{{ generate_invoice_form.quotation.customer.company_address }}</p>
+                    <p><b>Contact Person: </b>{{ generate_invoice_form.quotation.customer.contact_person_name }}</p>
+                    <p><b>Mobile Phone: </b>{{ generate_invoice_form.quotation.customer.phone_number }}</p>
+                    <p><b>Email: </b>{{ generate_invoice_form.quotation.customer.email }}</p>
+                </div>
+                <div class="info-cell info-right">
+                    <div style="text-align: right;">
+                        <p><b>Invoice ID: </b>{{ generate_invoice_form.invoice_id }}</p>
+                        <p><b>Quotation Ref: </b>{{ generate_invoice_form.quotation.quotation_id }}</p>
+                        <p><b>Create Date: </b>{{ generate_invoice_form.issue_date|date:"d/m/Y" }}</p>
+                        <p><b>Expired: </b>{{ generate_invoice_form.due_date|date:"d/m/Y" }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="content-section">
+            <table style="border: none;">
+                <tr style="background-color:#cfe2f3;">
+                    <th class="align-center" style="width:5%;">No</th>
+                    <th class="align-center" style="width:35%;">Descriptions</th>
+                    <th class="align-center" style="width:10%;">QTY</th>
+                    <th class="align-center" style="width:10%;">Period(Month)</th>
+                    <th class="align-center" style="width:25%;">Unit Price(USD)</th>
+                    <th class="align-center" style="width:15%;">Amount(USD)</th>
+                </tr>
+                {% for item in generate_invoice_form.quotation.items.all %}
+                <tr>
+                    <td class="align-center">{{ forloop.counter }}</td>
+                    <td>{{ item.product_name }}</td>
+                    <td class="align-center">{{ item.qty }}</td>
+                    <td class="align-center">{{ item.period }}</td>
+                    <td class="align-right">{{ item.price|floatformat:2|intcomma }}</td>
+                    <td class="align-right">{{ item.total_one_product|floatformat:2|intcomma }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="align-center text-red">No items found in this quotation.</td>
+                </tr>
+                {% endfor %}
+                <tr>
+                <td colspan="4" style="border: none !important;"></td>
+                <td class="text-blue align-right" style="text-align: right;"><b> TOTAL: </b></td>
+                <td class="align-right" style="text-align: right;"><b>{{ generate_invoice_form.quotation.total_all_products|floatformat:2|intcomma }}</b></td>
+            </tr>
+            {% for addi in generate_invoice_form.quotation.additional_payments.all %}
+                <!-- ============= Additional Expenses ============= -->
+                {% if addi.it_service_percent != 0 %}
+                    <tr>
+                        <td colspan="4" style="border: none !important;"></td>
+                        <td class="text-blue align-right" style="text-align: right;"> <b>IT Service ({{ addi.it_service_percent }}%):</b> </td>
+                        <td class="align-right" style="text-align: right;"><b>{{ addi.it_service_output|floatformat:2|intcomma }}</b></td>
+                    </tr>
+                {% endif %}
+                {% if addi.vat_percent != 0 %}
+                    <tr>
+                        <td colspan="4" style="border: none !important;"></td>
+                        <td class="text-blue align-right" style="text-align: right;"> <b>VAT ({{ addi.vat_percent }}%):</b> </td>
+                        <td class="align-right" style="text-align: right;"><b>{{ addi.vat_output|floatformat:2|intcomma }}</b></td>
+                    </tr>
+                {% endif %}
+                <tr>
+                    <td colspan="4" style="border: none !important;"></td>
+                    <td class="text-blue align-right" style="text-align: right;"><b>GRAND-TOTAL: </b></td>
+                    <td class="align-right" style="text-align: right;"><b>{{ addi.grand_total|floatformat:2|intcomma }}</b></td>
+                </tr>
+                {% if addi.exchange_rate != 0 %}
+                    <tr>
+                        <td colspan="4" style="border: none !important;"></td>
+                        <td class="text-blue align-right" style="text-align: right;"> <b>Rate ({{ addi.exchange_rate|intcomma }}) TOTAL LAK:</b> </td>
+                        <td class="align-right" style="text-align: right;"><b>{{ addi.exchange_rate_output|intcomma }}</b></td>
+                    </tr>
+                {% endif %}
+            {% endfor %}
+
+            </table>
+
+            <div class="terms-conditions-section">
+                <p style="color: #00205F;"><b><u>Terms and Conditions:</u></b></p>
+                <p style="color: #00205F;"><b>Payment Terms:</b> <br> <i>* 100% Payment in Advance (PIA)</i></p>
+                <p style="color: #00205F;"><b>Delivery Terms & Lead-Time:</b> <br><i>* Within 7 days after receiving payment</i></p>
+                <p style="color: #00205F;"><b>Warranty:</b> <br> <i>* Based on subscription period<br>* Local support by Microsoft Cloud Engineers</i></p>
+            </div>
+            <div style="margin-top: -120px; text-align: right;">
+                <h4 style="color: #00205F;"><u>For Transfers Bank Name: BCEL</u></h4> <br>
+                <p style="color: #00205F;">Account name: <strong>TOP VALUE SERVICE SOLE CO., LTD</strong></p>
+                <p style="color: #00205F;">
+                    LAK: 010-11000-1381-547-001 <br>
+                    USD: 010-11010-1381-547-001
+                </p>
+            </div>
+
+            <footer class="footer-row">
+                <div class="footer-cell align-bottom align-center">
+                    <p class="dotted-line">_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _</p>
+                    <p class="text-darkblue bold-text">Customer</p>
+                </div>
+
+                <div class="footer-cell align-bottom align-center">
+                        <p class="align-center">
+                            <img src="{{ generate_invoice_form.created_by.signature.url }}" 
+                                alt="Stamp and Signature" 
+                                style="width: 250px;">
+                        </p>
+                        <p class="align-center">
+                            <strong>
+                                {{ generate_invoice_form.created_by.employee_name }} 
+                                {{ generate_invoice_form.created_by.employee_lastname }}
+                            </strong>
+                        </p>
+                    <p class="dotted-line">_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _</p>
+                    <p class="text-darkblue bold-text">TVS Representative</p>
+                </div>
+            </footer>
+        </div>
+    </div>
+</body>
+</html>

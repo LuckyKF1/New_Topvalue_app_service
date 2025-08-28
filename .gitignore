@@ -1,0 +1,64 @@
+# =============================
+# Python / Django
+# =============================
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.sqlite3
+*.log
+*.pot
+*.mo
+*.pyc
+*.swp
+*.swo
+
+# Virtual environments
+venv/
+env/
+.venv/
+ENV/
+
+# Django migrations (optionally keep __init__.py)
+*/migrations/*.pyc
+*/migrations/*.pyo
+*/migrations/__pycache__/
+*/migrations/*.log
+
+# Media files / user uploads
+media/
+
+# Static files (collected)
+staticfiles/
+static/
+
+# Coverage reports
+htmlcov/
+.coverage
+.coverage.*
+
+# =============================
+# Docker
+# =============================
+# PostgreSQL data volume
+db/postgres_data/
+
+# Docker containers / logs / temp
+docker-compose.override.yml
+*.dockerignore
+*.env
+
+# =============================
+# IDE / Editor
+# =============================
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.code-workspace
+
+# =============================
+# OS-specific
+# =============================
+.DS_Store
+Thumbs.db
