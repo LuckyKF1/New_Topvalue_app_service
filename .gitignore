@@ -29,8 +29,6 @@ ENV/
 media/
 
 # Static files (collected)
-staticfiles/
-static/
 
 # Coverage reports
 htmlcov/
