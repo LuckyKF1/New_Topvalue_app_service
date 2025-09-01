@@ -5,7 +5,7 @@ services:
     image: dpage/pgadmin4:9.1  # Use the version 9.x pgAdmin image
     container_name: pgadmin_topvalue
     ports:
-      - "4002:443"
+      - "5050:443"
     environment:
       PGADMIN_DEFAULT_EMAIL: pgadmin_email@example.com
       PGADMIN_DEFAULT_PASSWORD: pgadmin_password_example!!!

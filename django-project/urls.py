@@ -21,6 +21,7 @@ urlpatterns = [
     path('app_employee/', include('apps.app_employee.urls', namespace='app_employee')),
     path('app_quotations/', include('apps.app_quotations.urls', namespace='app_quotations')),
     path('app_invoices/', include('apps.app_invoices.urls', namespace='app_invoices')),
+    path('app_po/', include('apps.app_po.urls', namespace='app_po')),
 ]
 
 # Static and Media files handling

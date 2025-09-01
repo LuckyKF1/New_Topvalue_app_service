@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% load static %}
+{% load widget_tweaks %}
+{% load humanize %}
+
+{% block main-content %}
+<div class="w3-container w3-animate-opacity w3-animate-left" style="margin-top: 70px;">
+    
+    <!-- Header -->
+    <div class="w3-margin-bottom w3-padding-small">
+        <h2 class="lao-noto w3-text-blue-light">{{ title }}</h2>
+        <div class="w3-right w3-animate-right">
+            {% if purchase_order.get_status_display == 'ສຳເລັດ'  %}
+                <a href="#" class="w3-button w3-animate-right w3-teal w3-hover-shadow w3-round-xlarge w3-hover-deep-orange">ອອກສັນຍາ</a>
+            {% endif %}
+            <a href="{% url 'app_po:update_po' purchase_order.po_id %}" class="w3-button w3-animate-right w3-green w3-hover-shadow w3-round-xlarge w3-hover-deep-orange" style="width: 100px;">ແກ້ໄຂ</a>
+            <a href="#" class="w3-button w3-animate-right w3-blue w3-hover-shadow w3-round-xlarge w3-hover-deep-orange">ເບິງໃບສັ່ງຊື້ ແລະ ດາວໂຫລດ</a>
+            <a href="{% url 'app_po:home' %}" class="w3-button w3-animate-right w3-red w3-hover-shadow w3-round-xlarge w3-hover-deep-orange">ອອກຈາກຫນ້ານີ້</a>
+        </div>
+        <p class="w3-text-gray">
+            <span class="w3-text-blue">ວັນທີ: {{ purchase_order.start_date|date:"d/m/Y" }} </span> |
+            <span class="w3-text-red">ໝົດອາຍຸ: {{ purchase_order.end_date|date:"d/m/Y" }} </span> |
+            <span>ພະນັກງານຮັບຜິດຊອບໃບເກັບເງິນ: {{ purchase_order.created_by }}</span> |
+        </p>
+        <span class="w3-tag w3-blue-light w3-round">{{ purchase_order.get_status_display }}</span>
+    </div>
+
+    <!-- Grid layout -->
+    <div class="w3-row-padding">
+        <!-- Left Column -->
+        <div class="w3-col l6 m12 w3-margin-bottom">
+            <!-- Customer Info -->
+            <div class="w3-card-4 w3-white w3-round-large w3-padding">
+                <h4 class="w3-text-black lao-noto">ຂໍ້ມູນລູກຄ້າ</h4>
+                <p class="w3-text-blue"><b class="w3-text-black">ບໍລິສັດ:</b> {{ purchase_order.quotation.customer.company_name }}</p>
+                <p class="w3-text-blue"><b class="w3-text-black">ຜູ້ຕິດຕໍ່:</b> {{ purchase_order.quotation.customer.contact_person_name }}</p>
+                <p class="w3-text-blue"><b class="w3-text-black">ເບີໂທ:</b> {{ purchase_order.quotation.customer.phone_number }}</p>
+                <p class="w3-text-blue"><b class="w3-text-black">ອີເມວ:</b> {{ purchase_order.quotation.customer.email }}</p>
+                <p class="w3-text-blue"><b class="w3-text-black">ທີ່ຢູ່:</b> {{ purchase_order.quotation.customer.company_address }}</p>
+            </div>
+        </div>
+
+        <!-- Right Column -->
+        <div class="w3-col l6 m12">
+            <!-- Price Summary -->
+            <div class="w3-card-4 w3-pale-green w3-round-large w3-padding w3-margin-bottom">
+                <h4 class="w3-text-green lao-noto">ເອກະສານຢືນຢັນ</h4>
+                {% if purchase_order.approved_po %}
+                    <p>
+                        <b>ໃບເກັບເງິນທີ່ໄດ້ຮອງຮັບແລ້ວ: </b>
+                        <a href="{{ purchase_order.approved_po.url }}" target="_blank" class="w3-button w3-small w3-blue w3-round">
+                            ເບິງ / ດາວໂຫລດ
+                        </a>
+                    </p>
+                {% else %}
+                    <p class="w3-text-red"><b>ໃບເກັບເງິນ:</b> ຍັງບໍ່ໄດ້ອັບໂຫລດ</p>
+                {% endif %}
+                <hr>
+
+                <h4 class="w3-text-green lao-noto">ສະຫຼຸບລາຄາ</h4>
+                <p class="w3-text-blue"><b class="w3-text-black">ລວມລາຄາ:</b> {{ purchase_order.total_all_products|floatformat:2|intcomma }} USD</p>
+            </div>
+        </div>
+
+    </div>
+    <!-- Invoice Items Table -->
+    <div class="w3-container">
+        <div class="w3-card-4 w3-white w3-round-large w3-padding w3-margin-top">
+            <h4 class="w3-text-blue lao-noto">ລາຍການສິນຄ້າ</h4>
+            <div class="w3-responsive">
+                <table class="w3-table w3-striped w3-border w3-small">
+                    <thead>
+                        <tr class="w3-blue-dark-light">
+                            <th>ລຳດັບ</th>
+                            <th>ສິນຄ້າ</th>
+                            <th>ລາຄາ</th>
+                            <th>ຈຳນວນ</th>
+                            <th>ໄລຍະເວລາ</th>
+                            <th>ລວມ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in purchase_order.items.all %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td>{{ item.product_name }}</td>
+                            <td>{{ item.price|floatformat:2|intcomma }} USD</td>
+                            <td>{{ item.qty }}</td>
+                            <td>{{ item.period }}</td>
+                            <td>{{ item.total_one_product|floatformat:2|intcomma }} USD</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="w3-center">ບໍ່ມີລາຍການສິນຄ້າ</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

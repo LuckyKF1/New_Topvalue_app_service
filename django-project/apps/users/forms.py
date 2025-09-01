@@ -44,7 +44,10 @@ class CustomerUserForm(UserCreationForm):
             'email',
             'phone_number',
             'password1',
-            'password2'
+            'password2',
+            'is_superuser',
+            'is_staff',
+            'is_active',
         ]
         labels = {
             'username': 'ລະຫັດຜູ້ໃຊ້',
@@ -52,6 +55,9 @@ class CustomerUserForm(UserCreationForm):
             'phone_number': 'ເບີໂທລະສັບ',
             'password1': 'ລະຫັດຜ່ານ',
             'password2': 'ຢືນຢັນລະຫັດຜ່ານ',
+            'is_superuser': 'Admin',
+            'is_staff': 'ພະນັກງານ',
+            'is_active': 'ສະຖານະເປີດໃຊ້ງານ',
         }
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

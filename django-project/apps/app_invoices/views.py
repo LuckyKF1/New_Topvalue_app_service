@@ -65,7 +65,7 @@ class InvoiceListView(LoginRequiredMixin, ListView):
             queryset = queryset.filter(issue_date__lte=end_date)
 
         # Default Order by
-        queryset = queryset.order_by('issue_date')
+        queryset = queryset.order_by('-issue_date')
 
         # Return Queryset
         return queryset
@@ -152,11 +152,13 @@ class CreateInvoice(LoginRequiredMixin, View):
                     existing_invoice.customer_payment = invoice.customer_payment
 
                 existing_invoice.save()
+                invoice = existing_invoice
             else:
                 # create new invoice
                 invoice.save()
-
-            return redirect('app_invoices:home')
+            print("Invoice ID", invoice.invoice_id)
+            print("Invoice PK", invoice.pk)
+            return redirect('app_invoices:invoice_details', invoice_id=invoice.invoice_id)
 
         # if form is not valid will be redirect to render
         context = {
