@@ -20,6 +20,8 @@ urlpatterns = [
     path('delete_po/<str:po_id>/', views.DeleteView.as_view(), name='delete_po'),
     path('po_details/<str:po_id>/', views.InvoiceDetailsView.as_view(), name='po_details'),
     path('po_details/update/<str:po_id>/', views.PurchaseOrderUpdateView.as_view(), name='update_po'),
+    path('po_details/view_po_form/<str:po_id>/', views.OnePoDetailsView.as_view(), name='po_view_form'),
+    path('po_details/view_po_form/download_pdf/<str:po_id>/', views.GeneratePoPdfView.as_view(), name='generate_po_pdf'),
 ]
 
 # when user go to path /app_name/ it will show api root page (endpoints list)

@@ -6,7 +6,7 @@ from django.db.models import Sum
 from django.core.exceptions import ValidationError
 
 # Import external models
-from apps.app_customers.models import CustomersModel
+from apps.app_customers.models import CustomersModel, CustomerTenantModel
 from apps.app_employee.models import EmployeesModel
 from apps.app_quotations.models import QuotationInformationModel
 from apps.app_invoices.models import InvoiceModel
@@ -21,6 +21,25 @@ class PoIdGeneratorModel(models.Model):
     class Meta:
         verbose_name = 'PO Number Generator'
         verbose_name_plural = 'PO Number Generators'
+# Suppliers Model
+class SuppliersModel(models.Model):
+    name = models.CharField(max_length=100, verbose_name='ຊືຜູ້ສະຫນອງ')
+    address_1 = models.CharField(max_length=255, verbose_name='ທີ່ຢູ່ຂອງຜູ້ສະຫນອງ 1', blank=True, null=True)
+    address_2 = models.CharField(max_length=255, verbose_name='ທີ່ຢູ່ຂອງຜູ້ສະຫນອງ 2', blank=True, null=True)
+    contact_1 = models.CharField(max_length=20, verbose_name='ເບີໂທຂອງຜູ້ສະຫນອງ', blank=True, null=True)
+    contact_2 = models.CharField(max_length=20, verbose_name='ເບີໂທຂອງຜູ້ສະຫນອງ 2', blank=True, null=True)
+    fax = models.CharField(max_length=20, verbose_name='ແຟັກ', blank=True, null=True)
+    email = models.EmailField(max_length=50, verbose_name='ອີເມວຂອງຜູ້ສະຫນອງ', blank=True, null=True)
+
+
+    class Meta:
+        verbose_name = 'ຜູ້ສະຫນອງ'
+        verbose_name_plural = 'ຜູ້ສະຫນອງ'
+
+    def __str__(self):
+        return self.name
+
+
 
 
 # ----------------------------
@@ -31,6 +50,8 @@ class ApprovedPOModel(models.Model):
     last_name = models.CharField(max_length=30, verbose_name='ນາມສະກຸນ')
     position = models.CharField(max_length=50,  verbose_name='ຕຳແຫນ່ງ')
     note = models.TextField(blank=True, null=True, verbose_name='ຫມາຍເຫດ')
+    signature = models.ImageField(upload_to='approver_signatures', verbose_name='ລາຍເຊັນ', blank=True, null=True)
+    stamp = models.ImageField(upload_to='approver_stamps', verbose_name='ກາຈ້ຳຂອງບໍລິສັດ', blank=True, null=True)
 
     class Meta:
         verbose_name = 'ຜູ້ອະນຸມັດໃບສັ່ງຊື້'
@@ -44,6 +65,10 @@ class ApprovedPOModel(models.Model):
 # Main Purchase Order
 # ----------------------------
 class PurchaseOrderModel(models.Model):
+    class BillingPlan(models.TextChoices):
+        Monthly = 'monthly/monthly', 'ຊຳລະແບບລາຍເດືອນ'
+        AnualMonthly = 'anual_monthly/anual_monthly', 'ສັນຍາລາຍປີ, ຊຳລະເປັນເດືອນ'
+        Anual = 'anual', 'ຊຳລະທັງຫມົດປີ'
     class PoStatus(models.TextChoices):
         PENDING = 'pending', 'ລໍຖ້າອະນຸມັດ'
         COMPLETED = 'completed', 'ສຳເລັດ'
@@ -52,13 +77,29 @@ class PurchaseOrderModel(models.Model):
         BANNED = 'banned', 'ຖືກລະງັບ'
 
     po_id = models.CharField(max_length=20, unique=True, verbose_name='ລະຫັດໃບສັ່ງຊື້')
-    customer = models.ForeignKey(
+    supplier = models.ForeignKey(
+        SuppliersModel,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='suppliers_po',
+        verbose_name='ເລືອກຜູ້ສະຫນອງ'
+    )
+    customer = models.OneToOneField(
         CustomersModel,
         on_delete=models.CASCADE,
         related_name='purchase_orders',
         verbose_name='ລູກຄ້າ',
         null=True,
         blank=True
+    )
+    tenant = models.ForeignKey(
+        CustomerTenantModel,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name='Tenant',
+        related_name='tenant_po'
     )
     quotation = models.OneToOneField(
         QuotationInformationModel,
@@ -74,6 +115,12 @@ class PurchaseOrderModel(models.Model):
         blank=True,
         null=True
     )
+    billing_plan = models.CharField(
+        max_length=30,
+        verbose_name='ຮູບແບບການຊຳລະ',
+        choices=BillingPlan.choices,
+        default=BillingPlan.Anual
+    )
     created_by = models.ForeignKey(
         EmployeesModel,
         on_delete=models.CASCADE,
@@ -88,8 +135,7 @@ class PurchaseOrderModel(models.Model):
         related_name='approved_pos',
         verbose_name='ອະນຸມັດໂດຍ'
     )
-    start_date = models.DateField(verbose_name='ວັນທີ່ເລີ່ມຕົ້ນ')
-    end_date = models.DateField(verbose_name='ວັນທີ່ສິ້ນສຸດ')
+    start_date = models.DateField(verbose_name='ວັນທີ່ອອກ')
     status = models.CharField(
         max_length=20,
         choices=PoStatus.choices,
@@ -101,6 +147,11 @@ class PurchaseOrderModel(models.Model):
         blank=True,
         null=True,
         verbose_name='ອະນຸມັດໃບສັ່ງຊື້'
+    )
+    signatured_date = models.DateField(
+        blank=True,
+        null=True,
+        verbose_name='ວັນທີຮັບຮອງອະນຸມັດໃບສັ່ງຊື້'
     )
     total_all_products = models.DecimalField(
         max_digits=12,
@@ -114,11 +165,6 @@ class PurchaseOrderModel(models.Model):
         verbose_name = 'ໃບສັ່ງຊື້'
         verbose_name_plural = 'ໃບສັ່ງຊື້'
         ordering = ['-po_id']
-
-    def clean(self):
-        super().clean()
-        if self.start_date and self.end_date and self.start_date >= self.end_date:
-            raise ValidationError({'end_date': 'ວັນສິ້ນສຸດຕ້ອງຫຼາຍກວ່າວັນເລີ່ມ'})
 
     def __str__(self):
         customer = self.quotation.customer.company_name if self.quotation and self.quotation.customer else 'ບໍ່ມີລູກຄ້າ'

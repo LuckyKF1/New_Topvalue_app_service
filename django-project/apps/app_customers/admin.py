@@ -3,10 +3,14 @@ from django.contrib import admin
 
 
 #Model
-from .models import CustomersModel
+from .models import CustomersModel, CustomerTenantModel
 
 
 #Register ModelAdmin Here
+@admin.register(CustomerTenantModel)
+class CustomerTenantModelAdmin(admin.ModelAdmin):
+    list_display = ['tenant_name', 'tenant_domain']
+
 
 @admin.register(CustomersModel)
 class CustomersModelAdmin(admin.ModelAdmin):

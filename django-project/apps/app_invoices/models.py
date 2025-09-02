@@ -51,5 +51,5 @@ class InvoiceModel(models.Model):
         ordering = ['-due_date']
 
     def __str__(self):
-        return f"ເລກໃບເກັບເງິນ: {self.invoice_id} - ເລກໃບສະເຫນີລາຄາ: {self.quotation.quotation_id} - ບໍລິສັດ {self.quotation.customer.company_name} - ວັນທີອອກ {self.issue_date} - ວັນທີ່ຫມົດອາຍຸ {self.due_date} - ສະຖານະ {self.status}"
+        return f"{self.invoice_id} - ບໍລິສັດ {self.quotation.customer.company_name}"
     

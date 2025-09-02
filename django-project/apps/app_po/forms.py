@@ -4,13 +4,17 @@ from django.forms import inlineformset_factory
 
 # Model 
 from .models import PurchaseOrderModel, PurchaseOrderItemsModel, PoIdGeneratorModel
+from apps.app_customers.models import CustomerTenantModel
 
 # Purchase Order Information ModelForm
+# app_po/forms.py
 class PurchaseOrderModelForm(forms.ModelForm):
+    tenant_name = forms.CharField(label="Tenant Name", required=True)
+    tenant_domain = forms.CharField(label="Tenant Domain", required=True)
+
     class Meta:
         model = PurchaseOrderModel
-        fields = '__all__'
-        exclude = ['po_id', 'created_by', 'created_at_log', 'updated_at_log']
+        exclude = ['po_id', 'created_by', 'created_at_log', 'updated_at_log', 'tenant']
 
     def __init__(self, *args, **kwargs):
         super(PurchaseOrderModelForm, self).__init__(*args, **kwargs)

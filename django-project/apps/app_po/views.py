@@ -26,6 +26,7 @@ from .forms import PurchaseOrderModelForm, PoItemsFormSet
 from apps.app_quotations.models import QuotationInformationModel
 from apps.app_employee.models import EmployeesModel
 from apps.app_invoices.models import InvoiceModel
+from apps.app_customers.models import CustomerTenantModel
 import logging
 
 logger = logging.getLogger(__name__)
@@ -55,20 +56,11 @@ class HomeView(LoginRequiredMixin, ListView):
         status = self.request.GET.get('status', '')
         if status:
             queryset = queryset.filter(status=status)
-
-        # Date filter
-        start_date = self.request.GET.get('start_date')
-        end_date = self.request.GET.get('end_date')
-
-        if start_date and end_date:
-            queryset = queryset.filter(start_date__range=[start_date, end_date])
-        elif start_date:
+        start_date = self.request.GET.get('start_date', '')
+        if start_date:
             queryset = queryset.filter(start_date__gte=start_date)
-        elif end_date:
-            queryset = queryset.filter(start_date__lte=end_date)
-
         # Default order
-        return queryset.order_by('-end_date')
+        return queryset.order_by('-start_date')
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -83,27 +75,23 @@ class HomeView(LoginRequiredMixin, ListView):
 @method_decorator(ratelimit(key='header:X-Forwarded-For', rate=settings.RATE_LIMIT, block=True), name='dispatch')
 class PurchaseOrderCreateView(LoginRequiredMixin, View):
     """
-    View for creating Purchase Orders from existing invoices.
-    Handles duplicate PO prevention and formset creation.
+    Create a Purchase Order (PO) from an existing Invoice.
+    Auto-creates Tenant if tenant_name/tenant_domain are provided.
+    Prepopulates PO items from quotation items.
     """
+
     login_url = 'users:login'
     template_name = 'app_po/create_po.html'
 
     def dispatch(self, request, *args, **kwargs):
-        """Common setup for both GET and POST requests."""
         self.invoice_id = self.kwargs.get('invoice_id')
         self.invoice = get_object_or_404(InvoiceModel, invoice_id=self.invoice_id)
         self.quotation = self.invoice.quotation
-        
-        # Check for existing PO early
-        self.existing_po = PurchaseOrderModel.objects.filter(
-            invoice=self.invoice
-        ).first()
-        
+        self.customer = self.quotation.customer
+        self.existing_po = PurchaseOrderModel.objects.filter(invoice=self.invoice).first()
         return super().dispatch(request, *args, **kwargs)
 
     def _get_initial_items(self):
-        """Extract initial items data from quotation."""
         return [
             {
                 'product_name': item.product_name,
@@ -115,25 +103,20 @@ class PurchaseOrderCreateView(LoginRequiredMixin, View):
         ]
 
     def _create_items_formset(self, data=None, instance=None):
-        """Create and configure the items formset."""
         initial_items = self._get_initial_items()
-        
         PoItemsFormSetNew = inlineformset_factory(
-            PurchaseOrderModel,
-            PurchaseOrderItemsModel,
+            parent_model=PurchaseOrderModel,
+            model=PurchaseOrderItemsModel,
             form=PoItemsFormSet.form,
             extra=len(initial_items),
             can_delete=False
         )
-        
-        # Use proper instance or create temporary one
         formset_instance = instance or PurchaseOrderModel()
         queryset = (
-            PurchaseOrderItemsModel.objects.none() 
-            if not instance or not instance.pk 
+            PurchaseOrderItemsModel.objects.none()
+            if not instance or not instance.pk
             else instance.items.all()
         )
-        
         return PoItemsFormSetNew(
             data=data,
             instance=formset_instance,
@@ -142,101 +125,84 @@ class PurchaseOrderCreateView(LoginRequiredMixin, View):
         )
 
     def _get_context_data(self, form, items_formset):
-        """Build context data for template rendering."""
         return {
             'form': form,
             'items': items_formset,
             'title': 'ສ້າງໃບສັ່ງຊື້',
             'invoice': self.invoice,
             'quotation': self.quotation,
+            'customer': self.customer,
         }
 
     def get(self, request, *args, **kwargs):
-        """Handle GET request - display the PO creation form."""
-        # Redirect if PO already exists
         if self.existing_po:
-            messages.warning(
-                request,
-                "ໃບສັ່ງຊື້ນີ້ໄດ້ຖືກສ້າງແລ້ວ, ກຳລັງເປີດຫນ້າແກ້ໄຂໃບສັ່ງຊື້"
-            )
+            messages.warning(request, "ໃບສັ່ງຊື້ນີ້ໄດ້ຖືກສ້າງແລ້ວ, ກຳລັງເປີດຫນ້າແກ້ໄຂ")
             return redirect('app_po:update_po', po_id=self.existing_po.po_id)
 
-        # Create new PO form
         form = PurchaseOrderModelForm(initial={
             'quotation': self.quotation,
             'invoice': self.invoice,
+            'customer': self.customer,
         })
-        
         items_formset = self._create_items_formset()
         context = self._get_context_data(form, items_formset)
-        
         return render(request, self.template_name, context)
 
     def post(self, request, *args, **kwargs):
-        """Handle POST request - process PO creation."""
-        # Prevent duplicate PO creation
         if self.existing_po:
             messages.warning(request, "ໃບສັ່ງຊື້ນີ້ໄດ້ຖືກສ້າງແລ້ວ")
             return redirect('app_po:po_details', po_id=self.existing_po.po_id)
 
         form = PurchaseOrderModelForm(request.POST, request.FILES)
-        
         if form.is_valid():
             return self._handle_valid_form(request, form)
-        else:
-            # Form is invalid - redisplay with errors
-            items_formset = self._create_items_formset(data=request.POST)
-            context = self._get_context_data(form, items_formset)
-            return render(request, self.template_name, context)
+
+        items_formset = self._create_items_formset(data=request.POST)
+        context = self._get_context_data(form, items_formset)
+        return render(request, self.template_name, context)
 
     def _handle_valid_form(self, request, form):
-        """Process valid form submission with transaction safety."""
         try:
             with transaction.atomic():
-                # Create PO instance
+                # Create Tenant if tenant_name/tenant_domain are provided
+                tenant_name = form.cleaned_data.pop('tenant_name', None)
+                tenant_domain = form.cleaned_data.pop('tenant_domain', None)
+                tenant = None
+                if tenant_name and tenant_domain:
+                    tenant = CustomerTenantModel.objects.create(
+                        tenant_name=tenant_name,
+                        tenant_domain=tenant_domain
+                    )
+                    # Assign tenant to customer
+                    self.customer.tenant = tenant
+                    self.customer.save()
+
+                # Save PO
                 po = form.save(commit=False)
                 po.created_by = self._get_employee(request.user)
                 po.invoice = self.invoice
+                po.customer = self.customer
+                po.tenant = tenant
                 po.save()
 
-                # Process items formset
-                items_formset = self._create_items_formset(
-                    data=request.POST, 
-                    instance=po
-                )
-                
+                # Save items formset
+                items_formset = self._create_items_formset(data=request.POST, instance=po)
                 if items_formset.is_valid():
                     items_formset.save()
-                    messages.success(
-                        request, 
-                        "ໃບສັ່ງຊື້ໄດ້ຖືກສ້າງສຳເລັດແລ້ວ"
-                    )
+                    messages.success(request, "ໃບສັ່ງຊື້ໄດ້ຖືກສ້າງສຳເລັດແລ້ວ")
                     return redirect('app_po:po_details', po_id=po.po_id)
                 else:
-                    # Log formset errors for debugging
-                    logger.error(
-                        f"PO items formset validation failed for invoice {self.invoice_id}: "
-                        f"{items_formset.errors}"
-                    )
-                    # Transaction will rollback automatically
                     raise ValueError("Items formset validation failed")
-                    
+
         except Exception as e:
-            logger.error(
-                f"Error creating PO for invoice {self.invoice_id}: {str(e)}"
-            )
-            messages.error(
-                request, 
-                "ເກີດຂໍ້ຜິດພາດໃນການສ້າງໃບສັ່ງຊື້, ກະລຸນາລອງໃໝ່"
-            )
-            
-        # If we reach here, there was an error
+            logger.exception(f"Error creating PO for invoice {self.invoice_id}: {str(e)}")
+            messages.error(request, "ເກີດຂໍ້ຜິດພາດໃນການສ້າງໃບສັ່ງຊື້")
+
         items_formset = self._create_items_formset(data=request.POST)
         context = self._get_context_data(form, items_formset)
         return render(request, self.template_name, context)
 
     def _get_employee(self, user):
-        """Get employee instance for the current user."""
         try:
             return EmployeesModel.objects.get(user=user)
         except EmployeesModel.DoesNotExist:
@@ -245,15 +211,23 @@ class PurchaseOrderCreateView(LoginRequiredMixin, View):
 
     def get_context_data(self, **kwargs):
         """
-        Additional context data method for potential future use.
-        Can be overridden in subclasses if needed.
+        Note: This method is not used by View directly (TemplateView uses it).
+        You already assemble context via _get_context_data() in get()/post().
+
+        Keep it only if you plan to subclass from a mixin that calls get_context_data().
+        Otherwise it can be removed to avoid confusion.
         """
-        context = super().get_context_data(**kwargs) if hasattr(super(), 'get_context_data') else {}
+        context = (
+            super().get_context_data(**kwargs)
+            if hasattr(super(), 'get_context_data')
+            else {}
+        )
         context.update({
             'invoice': self.invoice,
             'quotation': self.quotation,
         })
         return context
+
 
 # Delete View
 @method_decorator(ratelimit(key='header:X-Forwarded-For', rate=settings.RATE_LIMIT, block=True), name='dispatch')
@@ -293,35 +267,30 @@ class InvoiceDetailsView(LoginRequiredMixin, DetailView):
 
 
 # Update View 
+@method_decorator(ratelimit(key='header:X-Forwarded-For', rate=settings.RATE_LIMIT, block=True), name='dispatch')
 class PurchaseOrderUpdateView(LoginRequiredMixin, View):
     """
     View for updating existing Purchase Orders.
-    Handles form validation, item management, and permission checks.
+    Handles form validation, item management, and tenant assignment.
     """
     login_url = 'users:login'
     template_name = 'app_po/create_po.html'
 
     def dispatch(self, request, *args, **kwargs):
-        """Common setup for both GET and POST requests."""
         self.po_id = self.kwargs.get('po_id')
         self.po = get_object_or_404(PurchaseOrderModel, po_id=self.po_id)
         self.invoice = self.po.invoice
         self.quotation = self.invoice.quotation
-        
-        # Check permissions
+        self.customer = self.quotation.customer   # keep reference to customer
+
         if not self._has_update_permission(request.user):
             raise PermissionDenied("You don't have permission to update this Purchase Order")
         
         return super().dispatch(request, *args, **kwargs)
 
     def _has_update_permission(self, user):
-        """
-        Check if user has permission to update this PO.
-        Override this method to implement custom permission logic.
-        """
         try:
             employee = EmployeesModel.objects.get(user=user)
-            # Basic permission check - can be expanded based on business rules
             return (
                 self.po.created_by == employee or
                 user.is_superuser or
@@ -332,26 +301,18 @@ class PurchaseOrderUpdateView(LoginRequiredMixin, View):
             return False
 
     def _can_edit_po(self):
-        """
-        Check if PO is in a state that allows editing.
-        Override this method to implement status-based editing rules.
-        """
-        # Add your business logic here
-        # For example: return self.po.status in ['draft', 'pending']
-        return True  # Default: allow editing
+        return True
 
     def _create_items_formset(self, data=None):
-        """Create and configure the items formset for updates."""
         PoItemsFormSetUpdate = inlineformset_factory(
             PurchaseOrderModel,
             PurchaseOrderItemsModel,
             form=PoItemsFormSet.form,
-            extra=1,  # Allow adding one new item
-            can_delete=True,  # Allow deletion in update mode
-            min_num=1,  # Require at least one item
+            extra=1,
+            can_delete=True,
+            min_num=1,
             validate_min=True
         )
-        
         return PoItemsFormSetUpdate(
             data=data,
             instance=self.po,
@@ -359,7 +320,6 @@ class PurchaseOrderUpdateView(LoginRequiredMixin, View):
         )
 
     def _get_context_data(self, form, items_formset, **extra_context):
-        """Build context data for template rendering."""
         context = {
             'form': form,
             'items': items_formset,
@@ -367,6 +327,7 @@ class PurchaseOrderUpdateView(LoginRequiredMixin, View):
             'po': self.po,
             'invoice': self.invoice,
             'quotation': self.quotation,
+            'customer': self.customer,
             'can_edit': self._can_edit_po(),
             'is_update': True,
         }
@@ -374,112 +335,150 @@ class PurchaseOrderUpdateView(LoginRequiredMixin, View):
         return context
 
     def get(self, request, *args, **kwargs):
-        """Handle GET request - display the PO update form."""
-        # Check if PO can be edited
         if not self._can_edit_po():
-            messages.warning(
-                request,
-                "ໃບສັ່ງຊື້ນີ້ບໍ່ສາມາດແກ້ໄຂໄດ້ເນື່ອງຈາກສະຖານະປັດຈຸບັນ"
-            )
+            messages.warning(request, "ໃບສັ່ງຊື້ນີ້ບໍ່ສາມາດແກ້ໄຂໄດ້ເນື່ອງຈາກສະຖານະ")
             return redirect('app_po:po_details', po_id=self.po.po_id)
 
-        # Initialize form with existing PO data
-        form = PurchaseOrderModelForm(instance=self.po)
+        initial_data = {
+            'customer': self.customer
+        }
+
+        #prefill tanent data
+        if self.customer.tenant:
+            initial_data.update({
+                'tenant_name' : self.customer.tenant.tenant_name,
+                'tenant_domain': self.customer.tenant.tenant_domain,
+            })
+        form = PurchaseOrderModelForm(
+            instance=self.po,
+            initial= initial_data
+        )
         items_formset = self._create_items_formset()
-        
         context = self._get_context_data(form, items_formset)
         return render(request, self.template_name, context)
 
     def post(self, request, *args, **kwargs):
-        """Handle POST request - process PO updates."""
-        # Check if PO can be edited
         if not self._can_edit_po():
-            messages.error(
-                request,
-                "ໃບສັ່ງຊື້ນີ້ບໍ່ສາມາດແກ້ໄຂໄດ້ເນື່ອງຈາກສະຖານະປັດຈຸບັນ"
-            )
+            messages.error(request, "ໃບສັ່ງຊື້ນີ້ບໍ່ສາມາດແກ້ໄຂໄດ້ເນື່ອງຈາກສະຖານະ")
             return redirect('app_po:po_details', po_id=self.po.po_id)
 
-        form = PurchaseOrderModelForm(
-            request.POST, 
-            request.FILES, 
-            instance=self.po
-        )
-        
+        form = PurchaseOrderModelForm(request.POST, request.FILES, instance=self.po)
         if form.is_valid():
             return self._handle_valid_form(request, form)
         else:
-            # Form is invalid - redisplay with errors
             items_formset = self._create_items_formset(data=request.POST)
             context = self._get_context_data(form, items_formset)
             return render(request, self.template_name, context)
 
     def _handle_valid_form(self, request, form):
-        """Process valid form submission with transaction safety."""
         try:
             with transaction.atomic():
-                # Update PO instance
+                # craete or update tenant if tenant_name/tenant_domain are provided
+                tenant_name = form.cleaned_data.pop('tenant_name', None)
+                tenant_domain = form.cleaned_data.pop('tenant_domain', None)
+                tenant = self.customer.tenant  # default usd current tenant
+                if tenant_name and tenant_domain:
+                    if tenant:
+                        # update tenant
+                        tenant.tenant_name = tenant_name
+                        tenant.tenant_domain = tenant_domain
+                        tenant.save()
+                    else:
+                        # create tenant
+                        tenant = CustomerTenantModel.objects.create(
+                            tenant_name=tenant_name,
+                            tenant_domain=tenant_domain
+                        )
+                    # connect tenant backto customer
+                    self.customer.tenant = tenant
+                    self.customer.save()
+
                 po = form.save(commit=False)
                 po.updated_by = self._get_employee(request.user)
+                po.customer = self.customer
+                po.tenant = tenant
                 po.save()
 
-                # Process items formset
                 items_formset = self._create_items_formset(data=request.POST)
-                
                 if items_formset.is_valid():
                     items_formset.save()
-                    
-                    # Log successful update
-                    logger.info(
-                        f"PO {po.po_id} updated successfully by user {request.user.id}"
-                    )
-                    
-                    messages.success(
-                        request, 
-                        "ໃບສັ່ງຊື້ໄດ້ຖືກອັບເດດສຳເລັດແລ້ວ"
-                    )
+                    messages.success(request, "ໃບສັ່ງຊື້ໄດ້ຖືກອັບເດດສຳເລັດແລ້ວ")
                     return redirect('app_po:po_details', po_id=po.po_id)
                 else:
-                    # Log formset errors for debugging
-                    logger.error(
-                        f"PO items formset validation failed for PO {self.po_id}: "
-                        f"{items_formset.errors}"
-                    )
-                    # Transaction will rollback automatically
                     raise ValueError("Items formset validation failed")
-                    
         except Exception as e:
-            logger.error(
-                f"Error updating PO {self.po_id}: {str(e)}"
-            )
-            messages.error(
-                request, 
-                "ເກີດຂໍ້ຜິດພາດໃນການອັບເດດໃບສັ່ງຊື້, ກະລຸນາລອງໃໝ່"
-            )
-            
-        # If we reach here, there was an error
+            logger.error(f"Error updating PO {self.po_id}: {str(e)}")
+            messages.error(request, "ເກີດຂໍ້ຜິດພາດໃນການอັບເດດໃບສັ່ງຊື້")
+
         items_formset = self._create_items_formset(data=request.POST)
         context = self._get_context_data(form, items_formset)
         return render(request, self.template_name, context)
 
     def _get_employee(self, user):
-        """Get employee instance for the current user."""
         try:
             return EmployeesModel.objects.get(user=user)
         except EmployeesModel.DoesNotExist:
             logger.error(f"Employee not found for user {user.id}")
             raise ValueError(f"Employee profile not found for user {user.username}")
 
+
     def get_context_data(self, **kwargs):
-        """
-        Additional context data method for potential future use.
-        Can be overridden in subclasses if needed.
-        """
+        """Additional context data method for potential future use."""
         context = super().get_context_data(**kwargs) if hasattr(super(), 'get_context_data') else {}
         context.update({
             'po': self.po,
             'invoice': self.invoice,
             'quotation': self.quotation,
+            'customer': self.customer,   # 👈 make sure customer available
             'is_update': True,
         })
         return context
+
+
+@method_decorator(ratelimit(key='header:X-Forwarded-For', rate=settings.RATE_LIMIT, block=True), name='dispatch')
+class OnePoDetailsView(LoginRequiredMixin, DetailView):
+    login_url = 'users:login'
+    model = PurchaseOrderModel
+    template_name = 'app_po/components/po_view_form.html'
+    context_object_name = 'generate_po_form'
+
+    def get_object(self, queryset = None):
+        po_id = self.kwargs.get('po_id')
+        return get_object_or_404(PurchaseOrderModel, po_id=po_id)
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context = {
+            'title':f'ລາຍລະອຽດໃບສັ່ງຊື້ {self.kwargs.get("po_id")}',
+            'generate_po_form': self.get_object(),
+            'employee': getattr(self.request.user, 'employee', None),
+        }
+        return context
+
+    
+# Generate PO PDF with Signature
+@method_decorator(ratelimit(key='header:X-Forwarded-For', rate=settings.RATE_LIMIT, block=True), name='dispatch')
+class GeneratePoPdfView(LoginRequiredMixin, View):
+    login_url = 'users:login'
+    template_name = 'app_po/components/po_pdf_generator.html'
+
+    def get(self, request, *args, **kwargs):
+        po_id = self.kwargs.get('po_id')
+        po = get_object_or_404(PurchaseOrderModel, po_id=po_id)
+
+        context = {
+            'generate_po_form':po,
+            'employee': getattr(self.request.user, 'employee', None),
+            'STATIC_ROOT': settings.STATIC_ROOT
+        }
+        # Render HTML Content
+        html_string = render_to_string(self.template_name, context)
+
+        # Create HTTP Response with PDF
+        response = HttpResponse(content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="po_{po_id}.pdf'
+
+        # Generate PDF Using weasyprint
+        html = HTML(string=html_string, base_url=request.build_absolute_uri())
+        html.write_pdf(response)
+        return response

@@ -9,6 +9,10 @@
             <h1 class="lao-noto">{{title}}</h1>
             <p><strong>ລະຫັດລູກຄ້າ:</strong> {{ customer.customer_id }}</p>
             <p><strong>ຊືບໍລິສັດ:</strong> {{ customer.company_name }}</p>
+            {% if customer.tenant %}
+                <p><strong class="w3-text-blue">Tenant Name:</strong> {{ customer.tenant.tenant_name }}</p>
+                <p><strong class="w3-text-blue">Tenant Domain:</strong> {{ customer.tenant.tenant_domain }}</p>
+            {% endif %}
             <p><strong>ຜູ້ຕິດຕໍ່:</strong> {{ customer.contact_person_name }}</p>
             <p><strong>ເບີໂທລະສັບ:</strong> {{ customer.phone_number }}</p>
             <p><strong>ອີເມວ:</strong> {{ customer.email }}</p>

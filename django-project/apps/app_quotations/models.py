@@ -32,7 +32,7 @@ class QuotationInformationModel(CommonInformationModelMixins):
         verbose_name_plural = 'ໃບສະເຫນີລາຄາ'
         ordering = ['-end_date']
     def __str__(self):
-        return f"ໃບສະເຫນີລາຄາ {self.quotation_id} - ລູກຄ້າ {self.customer.company_name} - ຜູ້ຕິດຕໍ່ {self.customer.contact_person_name} - ສະຖານະ {self.status}"
+        return f"{self.quotation_id} - ລູກຄ້າ {self.customer.company_name}"
 
 # Items Model
 class QuotationItemsModel(CommonItemsModelMixins):

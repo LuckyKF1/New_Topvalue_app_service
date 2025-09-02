@@ -1,12 +1,16 @@
 # coding=utf-8
 from django.contrib import admin
 from apps.app_employee.models import EmployeesModel
-from .models import PoIdGeneratorModel, PurchaseOrderModel, PurchaseOrderItemsModel, ApprovedPOModel
+from .models import PoIdGeneratorModel, PurchaseOrderModel, PurchaseOrderItemsModel, ApprovedPOModel, SuppliersModel
 
 @admin.register(ApprovedPOModel)
 class ApprovedPOModelAdmin(admin.ModelAdmin):
     list_display = ['name', 'last_name', 'position']
     
+# Supplier Model Admin Register
+@admin.register(SuppliersModel)
+class SuppliersModelAdmin(admin.ModelAdmin):
+    list_display = ['name', 'address_1', 'address_2', 'contact_1', 'contact_2', 'fax', 'email']
 
 # inline for PO items model
 class PurchaseOrderItemsInline(admin.TabularInline):
@@ -22,13 +26,11 @@ class PurchaseOrderModelAdmin(admin.ModelAdmin):
         'po_id',
         'customer',
         'start_date',
-        'end_date',
         'status',
     ]
     list_filter = [
         'status',
         'start_date',
-        'end_date',
     ]
     search_fields = [
         'po_id',

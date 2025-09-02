@@ -14,13 +14,13 @@
                 <a href="#" class="w3-button w3-animate-right w3-teal w3-hover-shadow w3-round-xlarge w3-hover-deep-orange">ອອກສັນຍາ</a>
             {% endif %}
             <a href="{% url 'app_po:update_po' purchase_order.po_id %}" class="w3-button w3-animate-right w3-green w3-hover-shadow w3-round-xlarge w3-hover-deep-orange" style="width: 100px;">ແກ້ໄຂ</a>
-            <a href="#" class="w3-button w3-animate-right w3-blue w3-hover-shadow w3-round-xlarge w3-hover-deep-orange">ເບິງໃບສັ່ງຊື້ ແລະ ດາວໂຫລດ</a>
+            <a href="{% url 'app_po:po_view_form' purchase_order.po_id %}" class="w3-button w3-animate-right w3-blue w3-hover-shadow w3-round-xlarge w3-hover-deep-orange">ເບິງໃບສັ່ງຊື້ ແລະ ດາວໂຫລດ</a>
             <a href="{% url 'app_po:home' %}" class="w3-button w3-animate-right w3-red w3-hover-shadow w3-round-xlarge w3-hover-deep-orange">ອອກຈາກຫນ້ານີ້</a>
         </div>
         <p class="w3-text-gray">
             <span class="w3-text-blue">ວັນທີ: {{ purchase_order.start_date|date:"d/m/Y" }} </span> |
-            <span class="w3-text-red">ໝົດອາຍຸ: {{ purchase_order.end_date|date:"d/m/Y" }} </span> |
             <span>ພະນັກງານຮັບຜິດຊອບໃບເກັບເງິນ: {{ purchase_order.created_by }}</span> |
+            <span class="w3-green w3-tag w3-round w3-padding-small">ຜູ້ອະນຸມັດ: {{ purchase_order.approved_by }}</span>
         </p>
         <span class="w3-tag w3-blue-light w3-round">{{ purchase_order.get_status_display }}</span>
     </div>
@@ -33,6 +33,8 @@
             <div class="w3-card-4 w3-white w3-round-large w3-padding">
                 <h4 class="w3-text-black lao-noto">ຂໍ້ມູນລູກຄ້າ</h4>
                 <p class="w3-text-blue"><b class="w3-text-black">ບໍລິສັດ:</b> {{ purchase_order.quotation.customer.company_name }}</p>
+                <p class="w3-text-deep-orange"><b class="w3-text-black">Tenant Name:</b> {{ purchase_order.tenant.tenant_name }}</p>
+                <p class="w3-text-deep-orange"><b class="w3-text-black">Tenant Domain:</b> {{ purchase_order.tenant.tenant_domain }}</p>
                 <p class="w3-text-blue"><b class="w3-text-black">ຜູ້ຕິດຕໍ່:</b> {{ purchase_order.quotation.customer.contact_person_name }}</p>
                 <p class="w3-text-blue"><b class="w3-text-black">ເບີໂທ:</b> {{ purchase_order.quotation.customer.phone_number }}</p>
                 <p class="w3-text-blue"><b class="w3-text-black">ອີເມວ:</b> {{ purchase_order.quotation.customer.email }}</p>

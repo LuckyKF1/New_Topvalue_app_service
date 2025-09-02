@@ -1,0 +1,112 @@
+{% load static %}
+{% load humanize %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Download File</title>
+    <link rel="stylesheet" href="{% static 'app_po/css/app_po_pdf_generator.css' %}">
+</head>
+<body>
+    <div class="page">
+        <header>
+            <div class="header-row">
+                <div class="header-cell">
+                    <img src="{% static 'app_invoices/images/topvalue.png' %}" alt="logo-header" class="header-logo">
+                </div>
+            </div>
+        </header>
+        <div class="contact-info">
+            <p style="margin-top:-20px; padding:0; font-size: 10px; color: #002060;">
+                Nongbouathong Road, PhonsavatTai Village, Sikhottabong District, Vientiane Capital, Lao PDR <br>
+                Tel: +85621 254377, Fax: +85621 254300, Email: sales@topvalueservice.com, Website: www.topvalueservice.com
+            </p>
+        </div>
+
+        <div class="content-section">
+            <h1 class="main-heading"><strong style="color: #002060;"><u>Purchase Order</u></strong></h1>
+            <div class="info-row">
+                <div class="info-cell info-left">
+                    <p><b>To: {{ generate_po_form.supplier.name }} </b> <br>
+                        {{ generate_po_form.supplier.address_1 }} <br>
+                        {{ generate_po_form.supplier.address_2 }} <br>
+                        Gen: {{generate_po_form.supplier.contact_1}}, Ext. {{generate_po_form.supplier.contact_2}} | Fax: {{generate_po_form.supplier.fax}}<br>
+                    </p>
+                </div>
+                <div class="info-cell info-right">
+                    <div style="text-align: right;">
+                        <p>
+                            <b>Purchase Order No: </b>{{ generate_po_form.po_id }} <br>
+                            <b>Date: </b>{{ generate_po_form.start_date|date:"d/m/Y" }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="content-section">
+            <table style="border: none;">
+                <tr>
+                    <th class="align-center" style="width:5%; vertical-align: middle;">No</th>
+                    <th class="align-center" style="width:23%; vertical-align: middle;">Product Descriptions</th>
+                    <th class="align-center" style="width:22%; vertical-align: middle;">Tenant</th>
+                    <th class="align-center" style="width:10%; vertical-align: middle;">Quantity</th>
+                    <th class="align-center" style="width:10%; vertical-align: middle; font-size: 10px;">Subscription <br> Month to Cover</th>
+                    <th class="align-center" style="width:10%; vertical-align: middle;">Billing Plan</th>
+                    <th class="align-center" style="width:10%; vertical-align: middle;">Unit Price</th>
+                    <th class="align-center" style="width:10%; vertical-align: middle;">Amount(USD)</th>
+                </tr>
+                {% for item in generate_po_form.items.all %}
+                <tr>
+                    <td class="align-center">{{ forloop.counter }}</td>
+                    <td>{{ item.product_name }}</td>
+                    <td class="align-center">
+                        {% if generate_po_form.customer.tenant %}
+                            {{ generate_po_form.customer.tenant.tenant_name }} <br>
+                            {{ generate_po_form.customer.tenant.tenant_domain }}
+                        {% endif %}
+                    </td>
+                    <td class="align-center">{{ item.qty }}</td>
+                    <td class="align-center">{{ item.period }}</td>
+                    <td class="align-center">{{ generate_po_form.billing_plan|capfirst }}</td>
+                    <td class="align-right">{{ item.price|floatformat:2|intcomma }}</td>
+                    <td class="align-right">{{ item.total_one_product|floatformat:2|intcomma }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="align-center text-red">No items found in this quotation.</td>
+                </tr>
+                {% endfor %}
+                <tr>
+                    <td colspan="4" style="border: none !important;"></td>
+                    <td colspan="3" class="text-blue align-right" style="text-align: right; background-color: #002060; color: #fff;"><strong>TOTAL:</strong></td>
+                    <td class="align-right" style="text-align: right;"><strong>{{ generate_po_form.total_all_products|floatformat:2|intcomma }}</strong></td>
+                </tr>
+            </table>
+
+            <div class="terms-conditions-section">
+                <p><b><i>Payment Terms:</i></b></p>
+                <p style="margin-left: 50px; margin-top: -10px;"><i> Annual commitment, bill monthly</i></p>
+            </div>
+
+             <div style="margin-top: 100px; max-width: 200px;">
+                <!-- <p style="text-align: center;">
+                    <img src="{{ generate_po_form.approved_by.stamp.url }}" 
+                        alt="Stamp and Signature" 
+                        style="width: 160px;"> <br>
+                    <strong>
+                        {{ generate_po_form.approved_by.name }} 
+                        {{ generate_po_form.approved_by.last_name|upper }}
+                    </strong>
+                </p> -->
+                <p>__________________________________________________</p>
+                <p style="font-size: 10px;">AUTHORIZED SIGNATORY <br>
+                    DATE:
+                    <!-- DATE: {{ generate_po_form.signatured_date|date:"d/m/Y" }} -->
+                </p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
