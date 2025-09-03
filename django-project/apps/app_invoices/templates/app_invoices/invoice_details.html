@@ -12,8 +12,9 @@
         <div class="w3-right w3-animate-right">
             {% if invoice.get_status_display == 'ຈ່າຍແລ້ວ'  %}
                 <a href="{% url 'app_po:create_po_from_invoice' invoice_id=invoice.invoice_id %}"" class="w3-button w3-animate-right w3-teal w3-hover-shadow w3-round-xlarge w3-hover-deep-orange">ອອກໃບສັ່ງຊື້</a>
+            {% else %}
+                <a href="{% url 'app_invoices:update_invoice' invoice.invoice_id %}" class="w3-button w3-animate-right w3-green w3-hover-shadow w3-round-xlarge w3-hover-deep-orange" style="width: 100px;">ແກ້ໄຂ</a>
             {% endif %}
-            <a href="{% url 'app_invoices:update_invoice' invoice.invoice_id %}" class="w3-button w3-animate-right w3-green w3-hover-shadow w3-round-xlarge w3-hover-deep-orange" style="width: 100px;">ແກ້ໄຂ</a>
             <a href="{% url 'app_invoices:invoice_view_form' invoice.invoice_id %}" class="w3-button w3-animate-right w3-blue w3-hover-shadow w3-round-xlarge w3-hover-deep-orange">ເບິງໃບເກັບເງິນ ແລະ ດາວໂຫລດ</a>
             <a href="{% url 'app_invoices:home' %}" class="w3-button w3-animate-right w3-red w3-hover-shadow w3-round-xlarge w3-hover-deep-orange">ອອກຈາກຫນ້ານີ້</a>
         </div>

@@ -23,8 +23,6 @@ class CommonInformationModelMixins(models.Model):
         # but can be inherited by other models to share common fields or methods.
     customer = models.ForeignKey(CustomersModel, on_delete=models.CASCADE, related_name='customers', verbose_name='ລູກຄ້າ')
     created_by = models.ForeignKey(EmployeesModel, on_delete=models.CASCADE, related_name='created_by', verbose_name='ສ້າງໂດຍ')
-    created_at_log = models.DateTimeField(verbose_name='ວັນເວລາສ້າງ', default=tz.now)
-    updated_at_log = models.DateTimeField(verbose_name="ວັນທີອັບເດດຂໍ້ມູນ", auto_now=True)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING, verbose_name='ສະຖານະ')
     total_all_products = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'), editable=False, blank=True, null=True, verbose_name='ລາຄາລວມທັງໝົດ')
 

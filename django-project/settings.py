@@ -57,6 +57,7 @@ INSTALLED_APPS = [
     'apps.app_quotations',
     'apps.app_invoices',
     'apps.app_po',
+    'apps.app_contracts',
     'apps.common', # common app, for shared models and utilities
 ]
 

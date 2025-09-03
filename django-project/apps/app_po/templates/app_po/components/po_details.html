@@ -11,9 +11,10 @@
         <h2 class="lao-noto w3-text-blue-light">{{ title }}</h2>
         <div class="w3-right w3-animate-right">
             {% if purchase_order.get_status_display == 'ສຳເລັດ'  %}
-                <a href="#" class="w3-button w3-animate-right w3-teal w3-hover-shadow w3-round-xlarge w3-hover-deep-orange">ອອກສັນຍາ</a>
+                <a href="{% url 'app_contracts:create_contract' po_id=po.po_id %}" class="w3-button w3-animate-right w3-teal w3-hover-shadow w3-round-xlarge w3-hover-deep-orange">ອອກສັນຍາ</a>
+            {% else %}
+                <a href="{% url 'app_po:update_po' purchase_order.po_id %}" class="w3-button w3-animate-right w3-green w3-hover-shadow w3-round-xlarge w3-hover-deep-orange" style="width: 100px;">ແກ້ໄຂ</a>
             {% endif %}
-            <a href="{% url 'app_po:update_po' purchase_order.po_id %}" class="w3-button w3-animate-right w3-green w3-hover-shadow w3-round-xlarge w3-hover-deep-orange" style="width: 100px;">ແກ້ໄຂ</a>
             <a href="{% url 'app_po:po_view_form' purchase_order.po_id %}" class="w3-button w3-animate-right w3-blue w3-hover-shadow w3-round-xlarge w3-hover-deep-orange">ເບິງໃບສັ່ງຊື້ ແລະ ດາວໂຫລດ</a>
             <a href="{% url 'app_po:home' %}" class="w3-button w3-animate-right w3-red w3-hover-shadow w3-round-xlarge w3-hover-deep-orange">ອອກຈາກຫນ້ານີ້</a>
         </div>

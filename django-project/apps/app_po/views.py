@@ -80,18 +80,24 @@ class PurchaseOrderCreateView(LoginRequiredMixin, View):
     Prepopulates PO items from quotation items.
     """
 
-    login_url = 'users:login'
-    template_name = 'app_po/create_po.html'
+    login_url = 'users:login'  # Redirect to login page if user is not authenticated
+    template_name = 'app_po/create_po.html'  # Template used for rendering the PO form
 
     def dispatch(self, request, *args, **kwargs):
+        # Extract invoice_id from URL kwargs
         self.invoice_id = self.kwargs.get('invoice_id')
+        # Fetch the invoice or return 404 if it does not exist
         self.invoice = get_object_or_404(InvoiceModel, invoice_id=self.invoice_id)
+        # Get the related quotation from the invoice
         self.quotation = self.invoice.quotation
+        # Get the customer linked to the quotation
         self.customer = self.quotation.customer
+        # Check if a Purchase Order already exists for this invoice
         self.existing_po = PurchaseOrderModel.objects.filter(invoice=self.invoice).first()
         return super().dispatch(request, *args, **kwargs)
 
     def _get_initial_items(self):
+        # Prepare initial data for PO items formset based on quotation items
         return [
             {
                 'product_name': item.product_name,
@@ -103,20 +109,27 @@ class PurchaseOrderCreateView(LoginRequiredMixin, View):
         ]
 
     def _create_items_formset(self, data=None, instance=None):
+        # Create an inline formset for PO items, prefilled from quotation
         initial_items = self._get_initial_items()
         PoItemsFormSetNew = inlineformset_factory(
             parent_model=PurchaseOrderModel,
             model=PurchaseOrderItemsModel,
-            form=PoItemsFormSet.form,
-            extra=len(initial_items),
-            can_delete=False
+            form=PoItemsFormSet.form,  # Custom form for PO items
+            extra=len(initial_items),   # Number of extra blank forms = number of quotation items
+            can_delete=False            # Prevent deletion of items in formset
         )
+
+        # Decide which instance the formset is bound to (existing PO or new)
         formset_instance = instance or PurchaseOrderModel()
+
+        # Set queryset: empty if creating new, otherwise use existing PO items
         queryset = (
             PurchaseOrderItemsModel.objects.none()
             if not instance or not instance.pk
             else instance.items.all()
         )
+
+        # Return the formset instance with initial items if creating new PO
         return PoItemsFormSetNew(
             data=data,
             instance=formset_instance,
@@ -125,46 +138,59 @@ class PurchaseOrderCreateView(LoginRequiredMixin, View):
         )
 
     def _get_context_data(self, form, items_formset):
+        # Build context for rendering template
         return {
-            'form': form,
-            'items': items_formset,
-            'title': 'ສ້າງໃບສັ່ງຊື້',
-            'invoice': self.invoice,
-            'quotation': self.quotation,
-            'customer': self.customer,
+            'form': form,                # Main PO form
+            'items': items_formset,      # Inline items formset
+            'title': 'ສ້າງໃບສັ່ງຊື້',   # Page title
+            'invoice': self.invoice,      # Pass invoice to template
+            'quotation': self.quotation,  # Pass quotation to template
+            'customer': self.customer,    # Pass customer to template
         }
 
     def get(self, request, *args, **kwargs):
+        # Handle GET request (display form)
         if self.existing_po:
+            # If PO already exists, redirect to update page with warning
             messages.warning(request, "ໃບສັ່ງຊື້ນີ້ໄດ້ຖືກສ້າງແລ້ວ, ກຳລັງເປີດຫນ້າແກ້ໄຂ")
             return redirect('app_po:update_po', po_id=self.existing_po.po_id)
 
+        # Create a new PO form pre-filled with invoice, quotation, customer
         form = PurchaseOrderModelForm(initial={
             'quotation': self.quotation,
             'invoice': self.invoice,
             'customer': self.customer,
         })
+
+        # Create items formset
         items_formset = self._create_items_formset()
+
+        # Build context and render template
         context = self._get_context_data(form, items_formset)
         return render(request, self.template_name, context)
 
     def post(self, request, *args, **kwargs):
+        # Handle POST request (form submission)
         if self.existing_po:
+            # If PO already exists, prevent duplicate creation
             messages.warning(request, "ໃບສັ່ງຊື້ນີ້ໄດ້ຖືກສ້າງແລ້ວ")
             return redirect('app_po:po_details', po_id=self.existing_po.po_id)
 
+        # Bind form to POST data
         form = PurchaseOrderModelForm(request.POST, request.FILES)
         if form.is_valid():
+            # If main form is valid, handle saving inside transaction
             return self._handle_valid_form(request, form)
 
+        # If form is invalid, recreate items formset with POST data
         items_formset = self._create_items_formset(data=request.POST)
         context = self._get_context_data(form, items_formset)
         return render(request, self.template_name, context)
 
     def _handle_valid_form(self, request, form):
         try:
-            with transaction.atomic():
-                # Create Tenant if tenant_name/tenant_domain are provided
+            with transaction.atomic():  # Ensure all DB operations succeed or rollback
+                # Auto-create tenant if tenant_name and tenant_domain are provided
                 tenant_name = form.cleaned_data.pop('tenant_name', None)
                 tenant_domain = form.cleaned_data.pop('tenant_domain', None)
                 tenant = None
@@ -173,39 +199,44 @@ class PurchaseOrderCreateView(LoginRequiredMixin, View):
                         tenant_name=tenant_name,
                         tenant_domain=tenant_domain
                     )
-                    # Assign tenant to customer
+                    # Link tenant to customer
                     self.customer.tenant = tenant
                     self.customer.save()
 
-                # Save PO
+                # Save PO instance without committing to DB yet
                 po = form.save(commit=False)
-                po.created_by = self._get_employee(request.user)
+                po.created_by = self._get_employee(request.user)  # Assign employee
                 po.invoice = self.invoice
                 po.customer = self.customer
                 po.tenant = tenant
-                po.save()
+                po.save()  # Save PO to DB
 
                 # Save items formset
                 items_formset = self._create_items_formset(data=request.POST, instance=po)
                 if items_formset.is_valid():
-                    items_formset.save()
+                    items_formset.save()  # Save all items
                     messages.success(request, "ໃບສັ່ງຊື້ໄດ້ຖືກສ້າງສຳເລັດແລ້ວ")
                     return redirect('app_po:po_details', po_id=po.po_id)
                 else:
+                    # Raise exception if items are invalid
                     raise ValueError("Items formset validation failed")
 
         except Exception as e:
+            # Log any errors and display message to user
             logger.exception(f"Error creating PO for invoice {self.invoice_id}: {str(e)}")
             messages.error(request, "ເກີດຂໍ້ຜິດພາດໃນການສ້າງໃບສັ່ງຊື້")
 
+        # Re-render form with items formset after error
         items_formset = self._create_items_formset(data=request.POST)
         context = self._get_context_data(form, items_formset)
         return render(request, self.template_name, context)
 
     def _get_employee(self, user):
+        # Retrieve the employee instance linked to the logged-in user
         try:
             return EmployeesModel.objects.get(user=user)
         except EmployeesModel.DoesNotExist:
+            # Log and raise exception if no employee found
             logger.error(f"Employee not found for user {user.id}")
             raise ValueError(f"Employee profile not found for user {user.username}")
 
@@ -227,6 +258,7 @@ class PurchaseOrderCreateView(LoginRequiredMixin, View):
             'quotation': self.quotation,
         })
         return context
+
 
 
 # Delete View
