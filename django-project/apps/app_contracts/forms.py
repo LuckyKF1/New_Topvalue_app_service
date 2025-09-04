@@ -11,17 +11,23 @@ class ContractsModelForm(forms.ModelForm):
     class Meta:
         model = ContractsModel
         fields = '__all__'
+        exclude = ['created_by', ]
         widgets = {
-            'start_contract':forms.DateInput(attrs={type:'date'}),
-            'end_contract':forms.DateInput(attrs={type:'date'}),
+            'contract_id':forms.HiddenInput(),
         }
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for field_name, field in self.fields.items():
-            field.widget.attrs['class'] = 'form-control w3-input w3-border w3-round-large w3-margin-bottom'
+        self.fields['contract_id'].required = False
+        self.fields['contract_id'].widget = forms.HiddenInput()
 
-            if field_name in ['contract_id', 'status']:
-                field.widget.attrs['readonly'] = True
+        for field in self.fields.values():
+            field.widget.attrs['class'] = 'form-control w3-input w3-border w3-round-large w3-margin-bottom'
+            if isinstance(field, forms.DateField):
+                field.widget = forms.DateInput(attrs={
+                    'class':'form-control w3-input w3-border w3-round-large w3-margin-bottom',
+                    'type':'date'
+                })
+        
 
     def clean(self):
         cleaned_data = super().clean()

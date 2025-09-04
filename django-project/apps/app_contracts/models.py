@@ -66,6 +66,12 @@ class ContractsModel(models.Model):
         default=ContractStatus.DRAFT,
         verbose_name='ສະຖານະຂອງສັນຍາ'
     )
+    upload_contract = models.FileField(
+        upload_to='contract_docs/',
+        blank=True,
+        null=True,
+        verbose_name='ເອກະສານສັນຍາ'
+    )
 
     class Meta:
         verbose_name = 'ຈັດການສັນຍາ'
@@ -74,15 +80,16 @@ class ContractsModel(models.Model):
     def __str__(self):
         return f"{self.contract_id} - ລູກຄ້າ  {self.customer.company_name}"
     
-    def save(self, *args, **kwargs):
-        today = timezone.now().date()
-        if self.end_contract < today:
-            self.status = self.ContractStatus.EXPIRED
-        elif self.start_contract <= today <= self.end_contract:
-            self.status = self.ContractStatus.ACTIVE
-        else:
-            self.status = self.ContractStatus.DRAFT
-        super().save(*args, **kwargs)
+    # def save(self, *args, **kwargs):
+    #     today = timezone.now().date()
+    #     if self.end_contract < today:
+    #         self.status = self.ContractStatus.EXPIRED
+    #     elif self.start_contract <= today <= self.end_contract:
+    #         self.status = self.ContractStatus.ACTIVE
+    #     else:
+    #         self.status = self.ContractStatus.DRAFT
+    #     super().save(*args, **kwargs)
+        
     def clean(self):
         if self.start_contract and self.end_contract:
             if self.end_contract <= self.start_contract:

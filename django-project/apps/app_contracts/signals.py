@@ -15,7 +15,7 @@ def contract_id_generator(sender, instance, **kwargs):
             generator, created = GenerateContractNumber.objects.select_for_update().get_or_create(pk=1)
             generator.auto_generate_number += 1
             generator.save()
-            instance.contract_id = f"{PREFIX}{generator.auto_generate_number:076}"
+            instance.contract_id = f"{PREFIX}{generator.auto_generate_number:07d}"
 
 # Notification
 @receiver([post_save, post_delete], sender=ContractsModel)

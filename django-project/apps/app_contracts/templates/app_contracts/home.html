@@ -1,56 +1,97 @@
 {% extends "base.html" %}
 {% load static %}
 {% load widget_tweaks %}
-
+{% load humanize %}
 
 {% block main-content %}
-    <div class="w3-container" style="margin-top: 100px;">
-       <div class="w3-container w3-animate-left">
-            <h1 class="lao-noto">ລາຍການລູກຄ້າ</h1>
-            <form class="w3-container w3-padding w3-margin-top" method="get" action="{% url 'app_customers:home' %}">
-                <div class="w3-row w3-card w3-round w3-white w3-padding-small w3-border">
-                    <div class="w3-col s10">
-                        <input type="text" name="search" value="{{search}}" class="w3-input w3-border-0" placeholder="ຄົ້ນຫາດ້ວຍເລກລະຫັດລູກຄ້າ ແລະ ຊືບໍລິສັດ"/>
-                    </div>
-                    <div class="w3-col s2">
-                        <button type="submit" class="w3-button w3-blue w3-round w3-hover-green w3-block">
-                            <i class="fa fa-search"></i> ຄົ້ນຫາ </button>
-                    </div>
-                </div>
-            </form>
-            <table class="w3-table w3-hoverable w3-striped w3-bordered">
-                <tr>
-                    <th class="w3-blue w3-padding">ລຳດັບ</th>
-                    <th class="w3-blue w3-padding">ລະຫັດລູກຄ້າ</th>
-                    <th class="w3-blue w3-padding">ບໍລະສັດ</th>
-                    <th class="w3-blue w3-padding">ຊື່</th>
-                    <th class="w3-blue w3-padding">ເບີໂທ</th>
-                    <th class="w3-blue w3-padding">ອີເມວ</th>
-                    <th class="w3-blue w3-padding">ສ້າງວັນທີ່</th>
-                    <th class="w3-blue w3-padding"></th>
-                </tr>
-                {% comment %}
-                    {% for contract in all_contracts %}
-                        <tr>
-                            <td class="w3-padding">{{forloop.counter}}</td>
-                            <td class="w3-padding">{{contract.contract_id}}</td>
-                            <td class="w3-padding">{{contract.company_name}}</td>
-                            <td class="w3-padding">{{contract.contact_person_name}}</td>
-                            <td class="w3-padding">{{contract.phone_number}}</td>
-                            <td class="w3-padding">{{contract.email}}</td>
-                            <td class="w3-padding">{{contract.create_at|date:"d/m/Y"}}</td>
-                            <td class="w3-padding w3-right">
-                                <a href="#" class="w3-button w3-round w3-green w3-hover-shadow w3-hover-dark" style="width:100px;">ລາຍລະອຽດ</a>
-                                <a href="#" class="w3-button w3-round w3-red w3-hover-shadow w3-hover-black" style="width:100px;">ລຶບ</a>
-                            </td>
-                        </tr>
-                    {% empty %}
-                        <tr>
-                            <td colspan="8" class="w3-red w3-text-white w3-padding">ບໍມີຂໍ້ມູນໃດໆ</td>
-                        </tr>
-                    {% endfor %}
-                {% endcomment %}
-            </table>
-        </div>
+<div class="w3-container" style="margin-top: 70px;">
+    <div class="w3-container w3-animate-left">
+        <h1 class="lao-noto">{{ title }}</h1>
+        {% include 'snippets/filter.html' with form_action=filter_url search_placeholder="ຄົ້ນຫາດ້ວຍເລກໃບເກັບເງິນ, ບໍລິສັດ, ຊືຜູ້ຕິດຕໍ, ເລກທີໃບສະເຫນີລາຄາ" status_label="ເລືອກສະຖານະ" status_options=status_list show_date=True %}
+        <table class="w3-table w3-hoverable w3-striped w3-bordered">
+            <tr class="w3-blue-dark-light w3-padding">
+                <th class="w3-border" style="text-align: center;">ລຳດັບ</th>
+                <th class="w3-border" style="text-align: center;">ເລກທີ່ສັນຍາ</th>
+                <th class="w3-border" style="text-align: center;">ບໍລະສັດ</th>
+                <th class="w3-border" style="text-align: center;">ສິນຄ້າ</th>
+                <th class="w3-border" style="text-align: center;">ລາຄາ</th>
+                <th class="w3-border" style="text-align: center;">ຈຳນວນ</th>
+                <th class="w3-border" style="text-align: center;">ໄລຍະເວລາ</th>
+                <th class="w3-border" style="text-align: center;">ລາຄາລວມ</th>
+                <th class="w3-border" style="text-align: center;">ວັນທີອອກສັນຍາ</th>
+                <th class="w3-border" style="text-align: center;">ວັນທີຫມົດອາຍຸ</th>
+                <th class="w3-border" style="text-align: center;">ສະຖານະ</th>
+            </tr>
+                {% for contract in all_contracts %}
+                    <tr>
+                        <td class="w3-border">{{forloop.counter}}</td>
+                        <td class="w3-border">{{contract.contract_id}}</td>
+                        <td class="w3-border">{{contract.customer.company_name}}</td>
+                        <td class="w3-border">
+                            {% for item in contract.quotation.items.all %}
+                                {{ forloop.counter }}. {{item.product_name}} <br>
+                            {% endfor %}
+                        </td>
+                        <td class="w3-border">
+                            {% for item in contract.quotation.items.all %}
+                                {{item.price}} USD <br>
+                            {% endfor %}
+                        </td>
+                        <td class="w3-border">
+                            {% for item in contract.quotation.items.all %}
+                                {{item.qty}} <br>
+                            {% endfor %}
+                        </td>
+                        <td class="w3-border">
+                            {% for item in contract.quotation.items.all %}
+                                {{item.period}} <br>
+                            {% endfor %}
+                        </td>
+                        <td class="w3-border">
+                            {{contract.quotation.total_all_products}} USD
+                        </td>
+                        <td class="w3-border">
+                            {{contract.start_contract|date:"d-m-Y"}}
+                        </td>
+                        <td class="w3-border">
+                            {{contract.end_contract|date:"d-m-Y"}}
+                        </td>
+                        <td class="w3-border w3-center" style="vertical-align: middle;">
+                            <div class="w3-tooltip">
+                                <a href="{% url 'app_contracts:contract_details' contract.contract_id %}" class="w3-padding-small">
+                                    {% if contract.get_status_display == 'ກຳລັງໃຊ້ງານ'  %}
+                                    <span class="w3-tag w3-padding w3-green w3-card-4 w3-round w3-hover-deep-orange" style="width: 100px;">
+                                        {{contract.get_status_display}}
+                                    </span>
+                                    {% elif contract.get_status_display == 'ຮ່າງ' %}
+                                    <span class="w3-tag w3-padding w3-blue w3-card-4 w3-round w3-hover-deep-orange" style="width: 100px;">
+                                        {{contract.get_status_display}}
+                                    </span>
+                                    {% elif contract.get_status_display == 'ຫມົດອາຍຸການນຳໃຊ້' %}
+                                    <span class="w3-tag w3-padding w3-red w3-card-4 w3-round w3-hover-deep-orange" style="width: 100px;">
+                                        {{contract.get_status_display}}
+                                    </span>
+                                    {% else %}
+                                    <span class="w3-tag w3-padding w3-black w3-card-4 w3-round w3-hover-deep-orange" style="width: 100px;">
+                                        {{contract.get_status_display}}
+                                    </span>
+                                    {% endif %}
+                                </a>
+                                <!-- Tooltip hover -->
+                                <span class="w3-text w3-tag w3-card w3-round w3-dark-light w3-padding w3-animate-top w3-opacity-min"
+                                    style="position:absolute;right:100%;top:50%;transform:translateY(-50%); width: 300px;">
+                                    ຄິກທີ່ສະຖານະເພື່ອເຂົ້າເບິງລາຍລະອຽດຂອງສັນຍາ: {{ contract.contract_id }}
+                                </span>
+                            </div>
+                        </td>
+
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="12" class="w3-red w3-text-white w3-padding">ບໍມີຂໍ້ມູນໃດໆ</td>
+                    </tr>
+                {% endfor %}
+        </table>
     </div>
+</div>
 {% endblock %}

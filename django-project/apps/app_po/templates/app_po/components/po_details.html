@@ -11,7 +11,7 @@
         <h2 class="lao-noto w3-text-blue-light">{{ title }}</h2>
         <div class="w3-right w3-animate-right">
             {% if purchase_order.get_status_display == 'ສຳເລັດ'  %}
-                <a href="{% url 'app_contracts:create_contract' po_id=po.po_id %}" class="w3-button w3-animate-right w3-teal w3-hover-shadow w3-round-xlarge w3-hover-deep-orange">ອອກສັນຍາ</a>
+                <a href="{% url 'app_contracts:create_contract_from_po' purchase_order.po_id %}" class="w3-button w3-animate-right w3-teal w3-hover-shadow w3-round-xlarge w3-hover-deep-orange">ອອກສັນຍາ</a>
             {% else %}
                 <a href="{% url 'app_po:update_po' purchase_order.po_id %}" class="w3-button w3-animate-right w3-green w3-hover-shadow w3-round-xlarge w3-hover-deep-orange" style="width: 100px;">ແກ້ໄຂ</a>
             {% endif %}
@@ -20,7 +20,7 @@
         </div>
         <p class="w3-text-gray">
             <span class="w3-text-blue">ວັນທີ: {{ purchase_order.start_date|date:"d/m/Y" }} </span> |
-            <span>ພະນັກງານຮັບຜິດຊອບໃບເກັບເງິນ: {{ purchase_order.created_by }}</span> |
+            <span>ພະນັກງານຮັບຜິດຊອບໃບສັ່ງຊື້: {{ purchase_order.created_by }}</span> |
             <span class="w3-green w3-tag w3-round w3-padding-small">ຜູ້ອະນຸມັດ: {{ purchase_order.approved_by }}</span>
         </p>
         <span class="w3-tag w3-blue-light w3-round">{{ purchase_order.get_status_display }}</span>

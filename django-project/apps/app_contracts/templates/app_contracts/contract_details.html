@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% load static %}
+{% load widget_tweaks %}
+{% load humanize %}
+
+{% block main-content %}
+<div class="w3-container w3-animate-opacity w3-animate-left" style="margin-top: 70px;">
+    
+    <!-- Header -->
+    <div class="w3-margin-bottom w3-padding-small">
+        <h2 class="lao-noto w3-text-blue-light">{{ title }}</h2>
+        <div class="w3-right w3-animate-right">
+            {% if all_contracts.get_status_display != 'ກຳລັງໃຊ້ງານ'  %}
+                <a href="{% url 'app_contracts:update_contract' all_contracts.contract_id %}" class="w3-button w3-animate-right w3-green w3-hover-shadow w3-round-xlarge w3-hover-deep-orange" style="width: 100px;">ແກ້ໄຂ</a>
+            {% endif %}
+            {% if request.user.is_superuser  %}
+                <a href="{% url 'app_contracts:delete' all_contracts.contract_id %}" class="w3-button w3-animate-right w3-green w3-hover-shadow w3-round-xlarge w3-hover-deep-orange" style="width: 100px;">ລຶບ</a>
+            {% endif %}
+            <a href="{% url 'app_contracts:home' %}" class="w3-button w3-animate-right w3-red w3-hover-shadow w3-round-xlarge w3-hover-deep-orange">ອອກຈາກຫນ້ານີ້</a>
+        </div>
+        <p class="w3-text-gray">
+            <span class="w3-text-blue">ວັນທີ: {{ all_contracts.start_contract|date:"d/m/Y" }} </span> |
+            <span class="w3-text-red">ຫມົດອາຍຸການນຳໃຊ້: {{ all_contracts.end_contract|date:"d/m/Y" }} </span> |
+            <span>ພະນັກງານຮັບຜິດຊອບສັນຍາ: {{ all_contracts.created_by }}</span> |
+            <span class="w3-black w3-tag w3-round w3-padding">Billing Plan:
+                <strong class="w3-text-green"> {{ all_contracts.po.billing_plan|upper }}</strong>
+            </span>
+        </p>
+        <span class="w3-tag w3-blue-light w3-round" style="width: 150px;">{{ all_contracts.get_status_display }}</span>
+    </div>
+
+    <!-- Grid layout -->
+    <div class="w3-row-padding">
+        <!-- Left Column -->
+        <div class="w3-col l6 m12 w3-margin-bottom">
+            <!-- Customer Info -->
+            <div class="w3-card-4 w3-white w3-round-large w3-padding">
+                <h4 class="w3-text-black lao-noto">ຂໍ້ມູນລູກຄ້າ</h4><hr>
+                <p class="w3-text-blue"><b class="w3-text-black">ບໍລິສັດ:</b> {{ all_contracts.customer.company_name }}</p>
+                <p class="w3-text-deep-orange"><b class="w3-text-black">Tenant Name:</b> {{ all_contracts.customer.tenant.tenant_name }}</p>
+                <p class="w3-text-deep-orange"><b class="w3-text-black">Tenant Domain:</b> {{ all_contracts.customer.tenant.tenant_domain }}</p>
+                <p class="w3-text-blue"><b class="w3-text-black">ຜູ້ຕິດຕໍ່:</b> {{ all_contracts.customer.contact_person_name }}</p>
+                <p class="w3-text-blue"><b class="w3-text-black">ເບີໂທ:</b> {{ all_contracts.customer.phone_number }}</p>
+                <p class="w3-text-blue"><b class="w3-text-black">ອີເມວ:</b> {{ all_contracts.customer.email }}</p>
+                <p class="w3-text-blue"><b class="w3-text-black">ທີ່ຢູ່:</b> {{ all_contracts.customer.company_address }}</p>
+            </div>
+        </div>
+
+        <!-- Right Column -->
+        <div class="w3-col l6 m12">
+            <!-- Price Summary -->
+            <div class="w3-card-4 w3-white w3-round-large w3-padding w3-margin-bottom">
+                <h4 class="w3-text-green lao-noto">ກວດສອບເອກະສານອື່ນໆ</h4>
+                <!-- customer_po -->
+                <p>ເບິງໃບສະເຫນີລາຄາ:
+                    <a href="{% url 'app_quotations:quotation_details' all_contracts.quotation_id %}"
+                    target="_blank"
+                    class="w3-text-green"> ໃບສະເຫນີລາຄາ
+                    </a>
+                </p>
+                <p>ເບິງໃບເກັບເງິນ:
+                    <a href="{% url 'app_invoices:invoice_details' all_contracts.invoice.invoice_id %}" 
+                    target="_blank" 
+                    class="w3-text-green">
+                    ໃບເກັບເງິນ
+                    </a>
+                </p>
+                <p>ເບິງໃບສັ່ງຊື້:
+                    <a href="{% url 'app_po:po_details' all_contracts.po.po_id %}"
+                    target="_blank"
+                    class="w3-text-green"> ໃບສັ່ງຊື້
+                    </a>
+                </p>
+                <br><br><br><br>
+            </div>
+        </div>
+    </div>
+
+    <!-- Invoice Items Table -->
+    <div class="w3-container">
+        <div class="w3-card-4 w3-white w3-round-large w3-padding w3-margin-top">
+            <h4 class="w3-text-blue lao-noto">ລາຍການສິນຄ້າ</h4>
+            <div class="w3-responsive">
+                <table class="w3-table w3-striped w3-border w3-small">
+                    <thead>
+                        <tr class="w3-blue-dark-light">
+                            <th>ລຳດັບ</th>
+                            <th>ສິນຄ້າ</th>
+                            <th>ລາຄາ</th>
+                            <th>ຈຳນວນ</th>
+                            <th>ໄລຍະເວລາ</th>
+                            <th>ລວມ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in all_contracts.quotation.items.all %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td>{{ item.product_name }}</td>
+                            <td>{{ item.price|floatformat:2|intcomma }} USD</td>
+                            <td>{{ item.qty }}</td>
+                            <td>{{ item.period }}</td>
+                            <td>{{ item.total_one_product|floatformat:2|intcomma }} USD</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="w3-center">ບໍ່ມີລາຍການສິນຄ້າ</td>
+                        </tr>
+                        {% endfor %}
+                        <tr>
+                            <td colspan="5" class="w3-right-align w3-bold w3-light-blue">ຍອດລວມ:</td>
+                            <td class="w3-bold w3-light-blue">{{ all_contracts.quotation.total_all_products|floatformat:2|intcomma }} USD</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

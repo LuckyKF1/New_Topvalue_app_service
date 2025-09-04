@@ -6,93 +6,117 @@
 {% block main-content %}
 <div class="w3-container w3-animate-left" style="margin-top: 80px;">
 
-    {% if existing_po %}
-        <h3 class="w3-text-blue w3-center lao-noto w3-padding-small">ແກ້ໄຂໃບສັ່ງຊື້</h3>
+    <!-- Title -->
+    {% if existing_contract %}
+        <h3 class="w3-text-blue w3-center lao-noto w3-padding-small">ແກ້ໄຂສັນຍາ</h3>
     {% else %}
-        <h3 class="w3-text-blue w3-center lao-noto w3-padding-small">ສ້າງໃບສັ່ງຊື້ໃໝ່</h3>
+        <h3 class="w3-text-blue w3-center lao-noto w3-padding-small">ສ້າງສັນຍາໃໝ່ຈາກໃບສັ່ງຊື້</h3>
     {% endif %}
 
-    {% if confirm_update %}
-        <div class="w3-red w3-border w3-round-large w3-padding">
-            <h4 class="w3-text-white w3-center lao-noto">
-                <i class="fa fa-warning w3-center w3-margin-bottom w3-animate-heartead" style="font-size: 2rem;"></i> <br>
+    <!-- Alert if contract already exists -->
+    {% if existing_contract and po %}
+        <div class="w3-yellow w3-border w3-round-large w3-padding">
+            <h4 class="w3-text-dark-grey w3-center lao-noto">
+                <i class="fa fa-warning w3-center w3-margin-bottom" style="font-size: 2rem;"></i> <br>
                 ແຈ້ງເຕືອນ
             </h4>
             <p class="w3-center">
-                ມີ PO ຂອງ invoice <b class="w3-text-black">{{ invoice.invoice_id }}</b> ແລ້ວ
+                ມີສັນຍາສຳລັບ PO <b class="w3-text-black">{{ po.po_id }}</b> ແລ້ວ
             </p>
             <p class="w3-center">
-                ທ່ານຕ້ອງການ <b class="w3-text-black">ອັບເດດ</b> ຂໍ້ມູນແທນຫຼືບໍ?
+                ທ່ານຕ້ອງການ 
+                <a href="{% url 'app_contracts:update_contract' contract_id=existing_contract.contract_id %}" 
+                   class="w3-button w3-orange w3-round">
+                   ແກ້ໄຂສັນຍາທີ່ມີຢູ່
+                </a>
             </p>
         </div>
     {% endif %}
-
-    <form method="post" enctype="multipart/form-data" class="w3-container w3-light-grey w3-padding-large w3-card-4 w3-round-large w3-margin-top">
+    
+    <!-- Form -->
+    <form method="post" enctype="multipart/form-data" 
+          class="w3-container w3-light-grey w3-padding-large w3-card-4 w3-round-large w3-margin-top">
         {% csrf_token %}
 
-        {% if confirm_update %}
-            <!-- hidden field สำหรับยืนยันการอัปเดต -->
-            <input type="hidden" name="confirm_update" value="1">
-        {% endif %}
+        <!-- Hidden fields -->
+        {% for hidden in form.hidden_fields %}
+            {{ hidden }}
+        {% endfor %}
 
-        <!-- ======================== PO Main Form ======================== -->
+        <!-- ======================== Contract Main Form ======================== -->
         <div class="w3-card-2 w3-white w3-round-large w3-padding w3-margin-bottom">
-            <h3 class="w3-text-blue lao-noto w3-margin-bottom">ຂໍ້ມູນໃບສັ່ງຊື້</h3>
+            <h3 class="w3-text-blue lao-noto w3-margin-bottom">ຂໍ້ມູນສັນຍາ</h3>
             <div class="w3-row-padding">
                 {% for field in form.visible_fields %}
-                    <div class="w3-col l4 m6 s12 w3-padding-small">
+                    {% if not field.is_hidden %}
+                    <div class="w3-col l6 m6 s12 w3-padding-small">
                         <label class="w3-text-dark w3-medium">{{ field.label }}</label>
                         <div class="w3-margin-bottom">
-                            {{ field|add_class:"w3-input w3-border w3-round" }}
+                            {% if field.name in "customer po quotation invoice" %}
+                                <!-- Disabled dropdown for display -->
+                                {{ field|add_class:"w3-input w3-border w3-round" }}
+                                <!-- Hidden input to submit value -->
+                                <input type="hidden" name="{{ field.name }}" value="{{ field.value }}">
+                            {% else %}
+                                {{ field|add_class:"w3-input w3-border w3-round" }}
+                            {% endif %}
                             {% if field.errors %}
                                 <div class="w3-text-red w3-small">{{ field.errors }}</div>
                             {% endif %}
+                            {% if field.help_text %}
+                                <span class="w3-small w3-text-gray">{{ field.help_text }}</span>
+                            {% endif %}
                         </div>
                     </div>
+                    {% endif %}
                 {% endfor %}
             </div>
         </div>
 
-        <!-- ======================== PO Items Formset ======================== -->
-        <div class="w3-card w3-padding w3-round-large">
-            {{ items.management_form }}
-
-            <table class="w3-table w3-bordered w3-striped" id="items-table">
+        <!-- ======================== Contract Summary ======================== -->
+        <div class="w3-card w3-white w3-round-large w3-padding w3-margin-bottom">
+            <h3 class="w3-text-blue lao-noto w3-margin-bottom">ລາຍລະອຽດສິນຄ້າໃນສັນຍາ</h3>
+            <table class="w3-table w3-bordered w3-striped">
                 <thead>
                     <tr class="w3-light-grey">
                         <th>ຊື່ສິນຄ້າ</th>
                         <th>ລາຄາ</th>
                         <th>ຈຳນວນ</th>
-                        <th>ເວລາ(ເດືອນ)</th>
+                        <th>ເວລາ (ເດືອນ)</th>
+                        <th>ລວມ</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for form in items.forms %}
-                        <tr class="form-row">
-                            {% for hidden in form.hidden_fields %}
-                                {{ hidden }}
-                            {% endfor %}
-                            <td>{{ form.product_name|add_class:"w3-input w3-border w3-round" }}</td>
-                            <td>{{ form.price|add_class:"w3-input w3-border w3-round" }}</td>
-                            <td>{{ form.qty|add_class:"w3-input w3-border w3-round" }}</td>
-                            <td>{{ form.period|add_class:"w3-input w3-border w3-round" }}</td>
-                        </tr>
+                    {% for item in po.quotation.items.all %}
+                    <tr>
+                        <td>{{ item.product_name }}</td>
+                        <td>{{ item.price|intcomma }}</td>
+                        <td>{{ item.qty }}</td>
+                        <td>{{ item.period }}</td>
+                        <td>{{ item.total_one_product|intcomma }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="w3-center w3-text-gray">ບໍ່ມີລາຍການສິນຄ້າ</td>
+                    </tr>
                     {% endfor %}
+                    <tr class="w3-light-blue">
+                        <td colspan="4" class="w3-right-align w3-bold">ຍອດລວມ:</td>
+                        <td class="w3-bold">{{ po.quotation.total_all_products|intcomma }}</td>
+                    </tr>
                 </tbody>
             </table>
         </div>
 
         <!-- ======================== Submit Button ======================== -->
         <div class="w3-container w3-center w3-margin-top">
-            {% if confirm_update %}
-                <button type="submit" class="w3-button w3-orange w3-round-large w3-padding-large" style="width: 250px;">
-                    ຢືນຢັນອັບເດດ
-                </button>
-            {% else %}
-                <button type="submit" class="w3-button w3-green w3-round-large w3-padding-large w3-hover-dark-green w3-hover-shadow" style="width: 250px;">
-                    ບັນທຶກ
-                </button>
-            {% endif %}
+            <button type="submit" class="w3-button w3-green w3-round-large w3-padding-large w3-hover-dark-green w3-hover-shadow" style="width: 250px;">
+                {% if existing_contract %}ອັບເດດສັນຍາ{% else %}ສ້າງສັນຍາ{% endif %}
+            </button>
+            <a href="{% url 'app_contracts:home' %}" 
+               class="w3-button w3-gray w3-round-large w3-padding-large" style="width: 150px;">
+                ຍົກເລີກ
+            </a>
         </div>
     </form>
 </div>
