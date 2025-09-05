@@ -7,7 +7,7 @@
 <div class="w3-container" style="margin-top: 70px;">
     <div class="w3-container w3-animate-left">
         <h1 class="lao-noto">{{ title }}</h1>
-        {% include 'snippets/filter.html' with form_action=filter_url search_placeholder="ຄົ້ນຫາດ້ວຍເລກໃບເກັບເງິນ, ບໍລິສັດ, ຊືຜູ້ຕິດຕໍ, ເລກທີໃບສະເຫນີລາຄາ" status_label="ເລືອກສະຖານະ" status_options=status_list show_date=True %}
+        {% include 'snippets/filter.html' with form_action=filter_url search_placeholder="ຄົ້ນຫາດ້ວຍເລກໃບເກັບເງິນ, ບໍລິສັດ, ຊືຜູ້ຕິດຕໍ່, ເລກທີໃບສະເຫນີລາຄາ" status_label="ເລືອກສະຖານະທັ່ງຫມົດ" status_options=status_list show_date=True %}
         <table class="w3-table w3-hoverable w3-striped w3-bordered">
             <tr class="w3-blue-dark-light w3-padding">
                 <th class="w3-border" style="text-align: center;">ລຳດັບ</th>
@@ -29,51 +29,51 @@
                         <td class="w3-border">{{contract.customer.company_name}}</td>
                         <td class="w3-border">
                             {% for item in contract.quotation.items.all %}
-                                {{ forloop.counter }}. {{item.product_name}} <br>
+                                {{item.product_name}} <br>
                             {% endfor %}
                         </td>
-                        <td class="w3-border">
+                        <td class="w3-border" style="text-align: right;"">
                             {% for item in contract.quotation.items.all %}
-                                {{item.price}} USD <br>
+                                {{item.price}} <br>
                             {% endfor %}
                         </td>
-                        <td class="w3-border">
+                        <td class="w3-border" style="text-align: center;">
                             {% for item in contract.quotation.items.all %}
                                 {{item.qty}} <br>
                             {% endfor %}
                         </td>
-                        <td class="w3-border">
+                        <td class="w3-border" style="text-align: center;">
                             {% for item in contract.quotation.items.all %}
                                 {{item.period}} <br>
                             {% endfor %}
                         </td>
-                        <td class="w3-border">
-                            {{contract.quotation.total_all_products}} USD
+                        <td class="w3-border" style="text-align: right;"">
+                            {{contract.quotation.total_all_products}}
                         </td>
-                        <td class="w3-border">
+                        <td class="w3-border" style="text-align: center;">
                             {{contract.start_contract|date:"d-m-Y"}}
                         </td>
-                        <td class="w3-border">
+                        <td class="w3-border" style="text-align: center;">
                             {{contract.end_contract|date:"d-m-Y"}}
                         </td>
                         <td class="w3-border w3-center" style="vertical-align: middle;">
                             <div class="w3-tooltip">
                                 <a href="{% url 'app_contracts:contract_details' contract.contract_id %}" class="w3-padding-small">
                                     {% if contract.get_status_display == 'ກຳລັງໃຊ້ງານ'  %}
-                                    <span class="w3-tag w3-padding w3-green w3-card-4 w3-round w3-hover-deep-orange" style="width: 100px;">
-                                        {{contract.get_status_display}}
+                                    <span class="w3-tag w3-padding-small w3-green w3-card-4 w3-round w3-hover-light-blue" style="width: 100px; font-size: 12px;">
+                                        <i class="fas fa-signal w3-margin-right heartbeat"></i>{{contract.get_status_display}} 
                                     </span>
                                     {% elif contract.get_status_display == 'ຮ່າງ' %}
-                                    <span class="w3-tag w3-padding w3-blue w3-card-4 w3-round w3-hover-deep-orange" style="width: 100px;">
-                                        {{contract.get_status_display}}
+                                    <span class="w3-tag w3-padding-small w3-blue w3-card-4 w3-round w3-hover-light-blue" style="width: 100px; font-size: 12px;">
+                                        <i class="fa fa-spinner w3-margin-right w3-spin"></i>{{contract.get_status_display}}
                                     </span>
                                     {% elif contract.get_status_display == 'ຫມົດອາຍຸການນຳໃຊ້' %}
-                                    <span class="w3-tag w3-padding w3-red w3-card-4 w3-round w3-hover-deep-orange" style="width: 100px;">
-                                        {{contract.get_status_display}}
+                                    <span class="w3-tag w3-padding-small w3-red w3-card-4 w3-round w3-hover-light-blue" style="width: 100px; font-size: 12px;">
+                                        <i class="fa fa-clock w3-margin-right w3-spin"></i>{{contract.get_status_display}} 
                                     </span>
                                     {% else %}
-                                    <span class="w3-tag w3-padding w3-black w3-card-4 w3-round w3-hover-deep-orange" style="width: 100px;">
-                                        {{contract.get_status_display}}
+                                    <span class="w3-tag w3-padding-small w3-black w3-card-4 w3-round w3-hover-light-blue" style="width: 100px; font-size: 12px;">
+                                        <i class="fa fa-exclamation-triangle w3-margin-right heartbeat"></i>{{contract.get_status_display}}
                                     </span>
                                     {% endif %}
                                 </a>

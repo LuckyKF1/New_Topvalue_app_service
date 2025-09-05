@@ -1,5 +1,6 @@
 # coding=utf-8
 #=====[ Built-in / Standard Library ]=====
+import os
 import re
 import tempfile
 #=====[ Django Core Imports ]=====
@@ -19,6 +20,7 @@ from django.views.generic import ListView, DetailView, UpdateView,CreateView, Fo
 #=====[ Third-party Packages ]=====
 from django_ratelimit.decorators import ratelimit
 from weasyprint import HTML
+from django_weasyprint import WeasyTemplateResponse
 # from docxtpl import DocxTemplate
 import io
 #=====[ Django Forms & Formsets ]=====
@@ -81,76 +83,6 @@ class HomeView(LoginRequiredMixin, ListView):
         context['status_list'] = QuotationInformationModel.Status.choices
         return context
 
-
-# # ModelFormMixins + View
-# @method_decorator(ratelimit(key='header:X-Forwarded-For', rate=settings.RATE_LIMIT, block=True), name='dispatch')
-# class QuotationCreateUpdateView(LoginRequiredMixin, View):
-#     login_url = 'users:login'
-#     template_name = 'app_quotations/create_quotation.html'
-
-#     def get_object(self):
-#         quotation_id = self.kwargs.get('quotation_id')
-#         if quotation_id:
-#             return get_object_or_404(QuotationInformationModel, quotation_id=quotation_id)
-#         return None
-
-#     def get(self, request, *args, **kwargs):
-#         obj = self.get_object()
-#         context = self.get_context_data(obj=obj)
-#         return render(request, self.template_name, context)
-
-#     def post(self, request, *args, **kwargs):
-#         obj = self.get_object()
-#         context = self.get_context_data(obj=obj, post_data=request.POST)
-#         if self.forms_valid(context):
-#             return redirect(self.get_success_url(context['quotation_form'].instance))
-#         return render(request, self.template_name, context)
-
-#     def get_context_data(self, obj=None, post_data=None):
-#         context = {}
-#         context['title'] = 'ແກ້ໄຂໃບສະເຫນີລາຄາ' if obj else 'ສ້າງໃບສະເຫນີລາຄາ'
-
-#         if post_data:
-#             context['quotation_form'] = QuotationInformationModelForm(post_data, instance=obj)
-#             context['customer_form'] = CustomersModelForm(post_data, instance=obj.customer if obj else None)
-#             context['items_formset'] = QuotationItemsFormSet(post_data, instance=obj, prefix='items')
-#             context['additional_formset'] = AdditionalExpensesFormSet(post_data, instance=obj, prefix='additional')
-#         else:
-#             context['quotation_form'] = QuotationInformationModelForm(instance=obj)
-#             context['customer_form'] = CustomersModelForm(instance=obj.customer if obj else None)
-#             context['items_formset'] = QuotationItemsFormSet(instance=obj, prefix='items')
-#             context['additional_formset'] = AdditionalExpensesFormSet(instance=obj, prefix='additional')
-#         return context
-
-#     def forms_valid(self, context):
-#         quo_form = context['quotation_form']
-#         cus_form = context['customer_form']
-#         item_formset = context['items_formset']
-#         additional_formset = context['additional_formset']
-
-#         if all([quo_form.is_valid(), cus_form.is_valid(), item_formset.is_valid(), additional_formset.is_valid()]):
-#             with transaction.atomic():
-#                 customer = cus_form.save()
-#                 quotation = quo_form.save(commit=False)
-#                 quotation.customer = customer
-#                 if not quotation.pk:  # Create
-#                     quotation.created_by = self.request.user.employee
-#                 quotation.save()
-
-#                 item_formset.instance = quotation
-#                 item_formset.save()
-
-#                 additional_formset.instance = quotation
-#                 additional_formset.save()
-#             return True
-#         return False
-
-#     def get_success_url(self, obj):
-#         return reverse_lazy(
-#             'app_quotations:quotation_details',
-#             kwargs={'quotation_id': obj.quotation_id}
-#         )
-                
     
 # Create Quotation
 @method_decorator(
@@ -356,27 +288,78 @@ class GenerateQuotationPDF(LoginRequiredMixin, View):
     template_name = 'app_quotations/components/quotation_pdf_generator.html'
 
     def get(self, request, *args, **kwargs):
-        # Get Quotation Object
         quotation_id = kwargs.get('quotation_id')
         quotation = get_object_or_404(QuotationInformationModel, quotation_id=quotation_id)
 
-        #Get Context
-        context = {
-            'generate_quotation_form':quotation,
-            'employee':getattr(request.user, 'employee', None),
-            'STATIC_ROOT':settings.STATIC_ROOT,
+        # stylesheet path
+        css_path = os.path.join(
+            settings.BASE_DIR,
+            "apps", "app_quotations", "static", "app_quotations", "css", "quotation_pdf.css"
+        )
+
+        # logo absolute path for WeasyPrint
+        logo_paths = {
+            "company_logo":os.path.join(
+                settings.BASE_DIR,
+                "apps", "app_quotations", "static", "app_quotations", "images", "tvs_text.png"
+            ),
+            "partner_logo":os.path.join(
+                settings.BASE_DIR,
+                "apps", "app_quotations", "static", "app_quotations", "images", "partner.jpeg"
+            )
         }
-        # Render HTML Content
-        html_string = render_to_string(self.template_name, context)
+        logo_paths_uri = {key: f"file://{value}" for key, value in logo_paths.items()} # Using file:// protocol !Important
 
-        # Create HTTP Response with PDF
-        response = HttpResponse(content_type='application/pdf')
-        response['Content-Disposition'] = f'attachment; filename="quotation_{quotation_id}.pdf"'
+        # send logo_path to context (not to WeasyTemplateResponse)
+        context = {
+            'generate_quotation_form': quotation,
+            'employee': getattr(request.user, 'employee', None),
+            'STATIC_ROOT': settings.STATIC_ROOT,
+            'logo_paths': logo_paths_uri,
+        }
 
-        # Generate PDF Using weasyprint
-        html = HTML(string=html_string, base_url=request.build_absolute_uri())
-        html.write_pdf(response)
-        return response
+        return WeasyTemplateResponse(
+            request=request,
+            template=self.template_name,
+            context=context,
+            filename=f"quotation_{quotation_id}.pdf",
+            attachment=True,
+            stylesheets=[css_path],
+        )
+
+
+
+# xhtml2pdf ທົດລອງໃຊ້ Gen PDF
+
+
+# class GenerateQuotationPDF(LoginRequiredMixin, View):
+#     login_url = 'users:login'
+#     template_name = 'app_quotations/components/quotation_pdf_generator.html'
+
+#     def get(self, request, *args, **kwargs):
+#         # Get Quotation Object
+#         quotation_id = kwargs.get('quotation_id')
+#         quotation = get_object_or_404(QuotationInformationModel, quotation_id=quotation_id)
+
+#         #Get Context
+#         context = {
+#             'generate_quotation_form':quotation,
+#             'employee':getattr(request.user, 'employee', None),
+#             'STATIC_ROOT':settings.STATIC_ROOT,
+#         }
+#         # Render HTML Content
+#         html_string = render_to_string(self.template_name, context)
+
+#         # Create HTTP Response with PDF
+#         response = HttpResponse(content_type='application/pdf')
+#         response['Content-Disposition'] = f'attachment; filename="quotation_{quotation_id}.pdf"'
+
+#         # Generate PDF Using weasyprint
+#         html = HTML(string=html_string, base_url=request.build_absolute_uri())
+#         html.write_pdf(response)
+#         return response
+
+
     
 
 # Generate Quotation pdf without signature 

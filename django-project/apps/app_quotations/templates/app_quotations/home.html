@@ -7,19 +7,19 @@
  <div class="w3-container" style="margin-top: 70px;">
        <div class="w3-container w3-animate-left">
         <h1 class="lao-noto">{{title}}</h1>
-        {% include 'snippets/filter.html' with form_action=filter_url search_placeholder='ຄົ້ນຫາດ້ວຍເລກໃບສະເຫນີລາຄາ ຫຼື ຊື່ບໍລິສັດ' status_label='ເລືອກສະຖານະ' status_options=status_list show_date=True %}
+        {% include 'snippets/filter.html' with form_action=filter_url search_placeholder='ຄົ້ນຫາດ້ວຍເລກໃບສະເຫນີລາຄາ ຫຼື ຊື່ບໍລິສັດ' status_label='ເລືອກສະຖານະທັ່ງຫມົດ' status_options=status_list show_date=True %}
         <table class="w3-table w3-hoverable w3-striped w3-bordered">
             <tr class="w3-blue-dark-light w3-padding">
-                <th class="w3-border" style="text-align: center; width: 5%;">ລຳດັບ</th>
-                <th class="w3-border" style="text-align: center; width: 10%;">ລະຫັດໃບສະເຫນີລາຄາ</th>
-                <th class="w3-border" style="text-align: center; width: 15%;">ບໍລະສັດ</th>
-                <th class="w3-border" style="text-align: center; width: 19%;">ສິນຄ້າ</th>
-                <th class="w3-border" style="text-align: center; width: 7%;">ລາຄາ</th>
-                <th class="w3-border" style="text-align: center; width: 7%;">ຈຳນວນ</th>
-                <th class="w3-border" style="text-align: center; width: 7%;">ໄລຍະເວລາ</th>
-                <th class="w3-border" style="text-align: center; width: 10%;">ລາຄາລວມ</th>
-                <th class="w3-border" style="text-align: center; width: 10%;">ວັນທີ່ຫມົດອາຍຸ</th>
-                <th class="w3-border" style="text-align: center; width: 10%;">ການຈັດການ</th>
+                <th class="w3-border" style="text-align: center;">ລຳດັບ</th>
+                <th class="w3-border" style="text-align: center;">ລະຫັດໃບສະເຫນີລາຄາ</th>
+                <th class="w3-border" style="text-align: center;">ບໍລະສັດ</th>
+                <th class="w3-border" style="text-align: center;">ສິນຄ້າ</th>
+                <th class="w3-border" style="text-align: center;">ລາຄາ</th>
+                <th class="w3-border" style="text-align: center;">ຈຳນວນ</th>
+                <th class="w3-border" style="text-align: center;">ໄລຍະເວລາ</th>
+                <th class="w3-border" style="text-align: center;">ລາຄາລວມ</th>
+                <th class="w3-border" style="text-align: center;">ວັນທີ່ຫມົດອາຍຸ</th>
+                <th class="w3-border" style="text-align: center;">ການຈັດການ</th>
             </tr>
             {% for quotation in all_quotations %}
                 <tr>

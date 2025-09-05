@@ -51,6 +51,34 @@ div.div-insure_info {
 p.insure_info {
     font-size: 10px;
 }
+
+:root{
+    --beat-scale:1.2;
+    --beat-speed:1s;
+}
+.heartbeat {
+    display: inline-block;
+    animation: heartbeat var(--beat-speed) infinite ease-in-out;
+    transform: center;
+}
+
+@keyframes heartbeat {
+    0% {
+        transform: scale(1);
+    }
+    14% {
+        transform: scale(var(--beat-scale));
+    }
+    28% {
+        transform: scale(1);
+    }
+    42% {
+        transform: scale(var(--beat-scale));
+    }
+    70% {
+        transform: scale(1);
+    }
+}
 /* @media Print  */
 @media print {
     @page {

@@ -52,8 +52,8 @@ class ContractsListView(LoginRequiredMixin, ListView):
         if search:
             queryset = queryset.filter(
                 Q(contract_id__icontains = search ) |
-                Q(company_name__icontains = search) |
-                Q(contact_person_name__icontains = search) |
+                Q(customer__company_name__icontains = search) |
+                Q(customer__contact_person_name__icontains = search) |
                 Q(po__po_id__icontains = search)
             )
 
